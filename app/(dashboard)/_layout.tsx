@@ -51,7 +51,7 @@ const DashboardLayout = () => {
           name="meals"
           // name="tasks/index"
           options={{
-            title: "Task",
+            title: "Meals",
             tabBarIcon: (data) => (
               <MaterialIcons
                 name="check-circle"
@@ -81,6 +81,32 @@ const DashboardLayout = () => {
             tabBarIcon: (data) => (
               <MaterialIcons
                 name="settings"
+                size={data.size}
+                color={data.color}
+              />
+            ),
+          }}
+        />
+        <Tabs.Screen
+          name="favourites"
+          options={{
+            title: "Favourites",
+            tabBarIcon: (data) => (
+              <MaterialIcons
+                name="favorite"
+                size={data.size}
+                color={data.color}
+              />
+            ),
+          }}
+        />
+        <Tabs.Screen
+          name="Planner"
+          options={{
+            title: "Planner",
+            tabBarIcon: (data) => (
+              <MaterialIcons
+                name="check-circle"
                 size={data.size}
                 color={data.color}
               />

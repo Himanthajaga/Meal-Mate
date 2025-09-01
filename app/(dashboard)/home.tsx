@@ -4,10 +4,15 @@ import { AuthContext } from "../../context/AuthContext";
 import { getMeals } from "../../services/mealService";
 import MealCard from "../../components/MealCard";
 
+type Meal = {
+  id: string | number;
+  // add other meal properties if needed
+};
+
 export default function HomeScreen() {
   const context = useContext(AuthContext);
   const user = context?.user;
-  const [meals, setMeals] = useState([]);
+  const [meals, setMeals] = useState<Meal[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -53,7 +58,7 @@ export default function HomeScreen() {
       <Text>Welcome to MealMate!</Text>
       <FlatList
         data={meals}
-        renderItem={({ item }) => <MealCard meal={item} />}
+        renderItem={({ item }) => <MealCard meal={item} onFavorite={undefined} onDelete={undefined} />}
         keyExtractor={(item) => item.id?.toString() || Math.random().toString()}
         ListEmptyComponent={<Text>No meals found.</Text>}
       />

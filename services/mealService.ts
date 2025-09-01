@@ -8,19 +8,20 @@ import {
   doc,
   query,
   where,
+  getDoc,
 } from "firebase/firestore";
 
 // Collection reference for meals
 export const mealColRef = collection(db, "meals");
 
 // Add a new meal
-export const createMeal = async (meal) => {
+export const createMeal = async (meal: { title: string; description: string; }) => {
   const docRef = await addDoc(mealColRef, meal);
   return docRef.id;
 };
 
 // Get a single meal by ID
-export const getMealById = async (id) => {
+export const getMealById = async (id: string) => {
   const docRef = doc(db, "meals", id);
   const mealSnap = await getDoc(docRef);
   if (mealSnap.exists()) {
@@ -35,7 +36,7 @@ export const getAllMealData = async () => {
   return snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
 };
 
-export const addMeal = async (meal) => {
+export const addMeal = async (meal: { name: string; description: string; image: string; date: string; favorite: boolean; userId: string; }) => {
   await addDoc(collection(db, "meals"), meal);
 };
 

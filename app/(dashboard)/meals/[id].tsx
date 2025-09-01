@@ -19,8 +19,10 @@ const MealFormScreen = () => {
           showLoader();
           const meal = await getMealById(id);
           if (meal) {
-            setTitle(meal.title);
-            setDescription(meal.description);
+            // Type assertion to ensure meal has title and description
+            const { title, description } = meal as unknown as { title: string; description: string };
+            setTitle(title);
+            setDescription(description);
           }
         } finally {
           hideLoader();
@@ -51,6 +53,12 @@ const MealFormScreen = () => {
     }
   };
 
+  const [Image, setImageState] = useState<string>("");
+
+  function setImage(text: string): void {
+    setImageState(text);
+  }
+
   return (
     <View className="flex-1 w-full p-5">
       <Text className="text-2xl font-bold">
@@ -68,6 +76,13 @@ const MealFormScreen = () => {
         value={description}
         onChangeText={setDescription}
       />
+      <TextInput
+        className="border border-gray-400 p-2 my-2 rounded-md"
+        placeholder="Meal image URL"
+        value={Image}
+        onChangeText={setImage}
+      />
+      
       <TouchableOpacity
         className="bg-blue-400 rounded-md px-6 py-3 my-2"
         onPress={handleSubmit}
