@@ -48,7 +48,7 @@ const DashboardLayout = () => {
           }}
         />
         <Tabs.Screen
-          name="tasks"
+          name="meals"
           // name="tasks/index"
           options={{
             title: "Task",

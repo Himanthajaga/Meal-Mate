@@ -8,53 +8,30 @@ import {
 } from "react-native";
 import React, { useEffect, useState } from "react";
 import {
-  getAllTask,
-  getAllTaskData,
-  taskColRef,
-  deleteTask,
+  getMeals,
+  deleteMeal,
 } from "@/services/mealService";
+import { mealColRef } from "@/services/mealService";
 import { MaterialIcons } from "@expo/vector-icons";
-import { useRouter, useSegments } from "expo-router";
-import { Task } from "@/types/meal";
+import { useRouter } from "expo-router";
+import { Meal } from "@/types/meal";
 import { useLoader } from "@/context/LoaderContext";
 import { onSnapshot } from "firebase/firestore";
 
-const TasksScreen = () => {
-  const [tasks, setTasks] = useState<Task[]>([]);
+const MealsScreen = () => {
+  const [meals, setMeals] = useState<Meal[]>([]);
   const { hideLoader, showLoader } = useLoader();
-  const segment = useSegments();
   const router = useRouter();
 
-  const handleFetchData = async () => {
-    showLoader();
-    await getAllTaskData()
-      .then((data) => {
-        setTasks(data);
-        console.log(data);
-      })
-      .catch((err) => {
-        console.error(err);
-      })
-      .finally(() => {
-        hideLoader();
-      });
-    //  await getAllTask()
-    // .then((data) => {
-    //   console.log(data)
-    // })
-    // .catch((err) => {
-    //   console.error(err)
-    // })
-  };
   useEffect(() => {
     const unsubcribe = onSnapshot(
-      taskColRef,
-      (snapshot) => {
-        const taskList = snapshot.docs.map((taskRef) => ({
-          id: taskRef.id,
-          ...taskRef.data(),
-        })) as Task[];
-        setTasks(taskList);
+      mealColRef,
+      (snapshot: { docs: any[]; }) => {
+        const mealList = snapshot.docs.map((mealRef) => ({
+          id: mealRef.id,
+          ...mealRef.data(),
+        })) as Meal[];
+        setMeals(mealList);
       },
       (err) => {
         console.error(err);
@@ -66,7 +43,7 @@ const TasksScreen = () => {
   const handleDelete = (id: string) => {
     Alert.alert(
       "Confirm Delete",
-      "Are you sure you want to delete this task?",
+      "Are you sure you want to delete this meal?",
       [
         {
           text: "Cancel",
@@ -77,9 +54,9 @@ const TasksScreen = () => {
           onPress: async () => {
             showLoader();
             try {
-              await deleteTask(id);
-              setTasks((prevTasks) =>
-                prevTasks.filter((task) => task.id !== id)
+              await deleteMeal(id);
+              setMeals((prevMeals) =>
+                prevMeals.filter((meal) => meal.id !== id)
               );
             } catch (error) {
               console.error(error);
@@ -91,14 +68,15 @@ const TasksScreen = () => {
       ]
     );
   };
+
   return (
     <View className="flex-1 w-full justify-center align-items-center">
-      <Text className="text-center text-4xl">Tasks screen</Text>
+      <Text className="text-center text-4xl">Meals screen</Text>
       <View className="absolute bottom-5 right-5 z-40">
         <Pressable
           className="bg-blue-500 rounded-full p-5 shadow-lg"
           onPress={() => {
-            router.push("/(dashboard)/tasks/new");
+            router.push("/(dashboard)/meals/new");
           }}
         >
           <MaterialIcons name="add" size={28} color={"#fff"} />
@@ -106,24 +84,27 @@ const TasksScreen = () => {
       </View>
 
       <ScrollView className="mt-4">
-        {tasks.map((task) => {
+        {meals.map((meal) => {
           return (
             <View
-              key={task.id}
+              key={meal.id}
               className="bg-gray-200 p-4 mb-3 rounded-lg mx-4 border border-gray-400"
             >
-              <Text className="text-lg font-semibold">{task.title}</Text>
+              <Text className="text-lg font-semibold">{meal.title}</Text>
               <Text className="text-sm text-gray-700 mb-2">
-                {task.description}
+                {meal.description}
               </Text>
               <View className="flex-row">
                 <TouchableOpacity
                   className="bg-yellow-300 px-3 py-1 rounded"
-                  onPress={() => router.push(`/(dashboard)/tasks/${task.id}`)}
+                  onPress={() => router.push(`/(dashboard)/meals/${meal.id}`)}
                 >
                   <Text className="text-xl">Edit</Text>
                 </TouchableOpacity>
-                <TouchableOpacity className="bg-red-500 px-3 py-1 rounded ml-3">
+                <TouchableOpacity
+                  className="bg-red-500 px-3 py-1 rounded ml-3"
+                  onPress={() => handleDelete(meal.id)}
+                >
                   <Text className="text-xl">Delete</Text>
                 </TouchableOpacity>
               </View>
@@ -135,4 +116,4 @@ const TasksScreen = () => {
   );
 };
 
-export default TasksScreen;
+export default MealsScreen;
