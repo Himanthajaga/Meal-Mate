@@ -4,7 +4,7 @@ import { AuthContext } from "../../context/AuthContext";
 import { getMeals } from "../../services/mealService";
 import MealCard from "../../components/MealCard";
 
-export default function FavoritesScreen() {
+export default function FavouritesScreen() {
   const { user } = useContext(AuthContext);
   const [meals, setMeals] = useState([]);
 

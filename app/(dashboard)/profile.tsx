@@ -1,12 +1,14 @@
-import { View, Text } from 'react-native'
-import React from 'react'
+import React, { useContext } from "react";
+import { View, Text, Button } from "react-native";
+import { AuthContext } from "../../context/AuthContext";
 
-const ProfileScreen = () => {
+export default function ProfileScreen() {
+  const { user, signOut } = useContext(AuthContext);
+
   return (
-    <View className="flex-1 w-full items-center justify-center">
-      <Text className="text-4xl text-center">Profile Screen</Text>
+    <View>
+      <Text>Email: {user?.email}</Text>
+      <Button title="Logout" onPress={signOut} />
     </View>
-  )
+  );
 }
-
-export default ProfileScreen

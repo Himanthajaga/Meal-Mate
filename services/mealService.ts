@@ -1,4 +1,4 @@
-import { db } from "../firebase";
+import { db, storage } from "../firebase";
 import {
   collection,
   addDoc,
@@ -10,17 +10,58 @@ import {
   where,
   getDoc,
 } from "firebase/firestore";
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 
-// Collection reference for meals
+import { Meal } from "@/types/meal";
+
 export const mealColRef = collection(db, "meals");
 
-// Add a new meal
-export const createMeal = async (meal: { title: string; description: string; }) => {
-  const docRef = await addDoc(mealColRef, meal);
+export const createMeal = async (meal: Meal) => {
+  let imageUrl = meal.image;
+  // If image is a local URI or base64, upload to Firebase Storage
+  if (
+    imageUrl &&
+    (imageUrl.startsWith("file://") || imageUrl.startsWith("data:image"))
+  ) {
+    try {
+      let blob: Blob | undefined;
+      if (imageUrl.startsWith("file://")) {
+        const response = await fetch(imageUrl);
+        blob = await response.blob();
+      } else if (imageUrl.startsWith("data:image")) {
+        // Convert base64 to blob
+        const base64 = imageUrl.split(",")[1];
+        const byteCharacters = atob(base64);
+        const byteNumbers = new Array(byteCharacters.length);
+        for (let i = 0; i < byteCharacters.length; i++) {
+          byteNumbers[i] = byteCharacters.charCodeAt(i);
+        }
+        const byteArray = new Uint8Array(byteNumbers);
+        blob = new Blob([byteArray], { type: "image/jpeg" });
+      }
+      if (blob) {
+        const filename = `meals/${Date.now()}.jpg`;
+        const storageRef = ref(storage, filename);
+        await uploadBytes(storageRef, blob);
+        imageUrl = await getDownloadURL(storageRef);
+      } else {
+        imageUrl = "";
+      }
+    } catch (err) {
+      console.error("Image upload error:", err);
+      imageUrl = "";
+    }
+  }
+  const docRef = await addDoc(mealColRef, { ...meal, image: imageUrl });
   return docRef.id;
 };
 
-// Get a single meal by ID
+export const getMeals = async (userId: string) => {
+  const q = query(mealColRef, where("userId", "==", userId));
+  const snapshot = await getDocs(q);
+  return snapshot.docs.map((doc) => ({ id: doc.id, ...(doc.data() as Meal) }));
+};
+
 export const getMealById = async (id: string) => {
   const docRef = doc(db, "meals", id);
   const mealSnap = await getDoc(docRef);
@@ -30,28 +71,14 @@ export const getMealById = async (id: string) => {
   return null;
 };
 
-// Get all meals (admin or for listing all meals)
-export const getAllMealData = async () => {
-  const snapshot = await getDocs(mealColRef);
-  return snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+export const updateMeal = async (id: string, meal: Partial<Meal>) => {
+  const docRef = doc(db, "meals", id);
+  await updateDoc(docRef, meal);
 };
 
-export const addMeal = async (meal: { name: string; description: string; image: string; date: string; favorite: boolean; userId: string; }) => {
-  await addDoc(collection(db, "meals"), meal);
-};
-
-export const getMeals = async (userId) => {
-  const q = query(collection(db, "meals"), where("userId", "==", userId));
-  const snapshot = await getDocs(q);
-  return snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
-};
-
-export const updateMeal = async (id, meal) => {
-  await updateDoc(doc(db, "meals", id), meal);
-};
-
-export const deleteMeal = async (id) => {
-  await deleteDoc(doc(db, "meals", id));
+export const deleteMeal = async (id: string) => {
+  const docRef = doc(db, "meals", id);
+  await deleteDoc(docRef);
 };
 
 export const fetchMockRecipes = async () => {

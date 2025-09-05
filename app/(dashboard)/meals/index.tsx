@@ -1,16 +1,7 @@
-import {
-  View,
-  Text,
-  Pressable,
-  ScrollView,
-  TouchableOpacity,
-  Alert,
-} from "react-native";
+import { View, Text, Pressable, ScrollView, Alert } from "react-native";
+import MealCard from "@/components/MealCard";
 import React, { useEffect, useState } from "react";
-import {
-  getMeals,
-  deleteMeal,
-} from "@/services/mealService";
+import { getMeals, deleteMeal } from "@/services/mealService";
 import { mealColRef } from "@/services/mealService";
 import { MaterialIcons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
@@ -26,7 +17,7 @@ const MealsScreen = () => {
   useEffect(() => {
     const unsubcribe = onSnapshot(
       mealColRef,
-      (snapshot: { docs: any[]; }) => {
+      (snapshot: { docs: any[] }) => {
         const mealList = snapshot.docs.map((mealRef) => ({
           id: mealRef.id,
           ...mealRef.data(),
@@ -84,33 +75,24 @@ const MealsScreen = () => {
       </View>
 
       <ScrollView className="mt-4">
-        {meals.map((meal) => {
-          return (
-            <View
-              key={meal.id}
-              className="bg-gray-200 p-4 mb-3 rounded-lg mx-4 border border-gray-400"
+        {meals.map((meal) => (
+          <View
+            key={meal.id}
+            style={{ position: "relative", marginBottom: 16 }}
+          >
+            <MealCard
+              meal={meal}
+              onFavorite={() => {}}
+              onDelete={() => handleDelete(meal.id ?? "")}
+            />
+            <Pressable
+              onPress={() => router.push(`/(dashboard)/meals/${meal.id}`)}
+              style={{ position: "absolute", top: 10, right: 16 }}
             >
-              <Text className="text-lg font-semibold">{meal.title}</Text>
-              <Text className="text-sm text-gray-700 mb-2">
-                {meal.description}
-              </Text>
-              <View className="flex-row">
-                <TouchableOpacity
-                  className="bg-yellow-300 px-3 py-1 rounded"
-                  onPress={() => router.push(`/(dashboard)/meals/${meal.id}`)}
-                >
-                  <Text className="text-xl">Edit</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  className="bg-red-500 px-3 py-1 rounded ml-3"
-                  onPress={() => handleDelete(meal.id)}
-                >
-                  <Text className="text-xl">Delete</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          );
-        })}
+              <Text style={{ color: "#3b82f6", fontWeight: "bold" }}>Edit</Text>
+            </Pressable>
+          </View>
+        ))}
       </ScrollView>
     </View>
   );

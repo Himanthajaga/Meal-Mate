@@ -1,12 +1,10 @@
-import { View, Text } from 'react-native'
-import React from 'react'
+import React from "react";
+import { View, Text } from "react-native";
 
-const Settings = () => {
+export default function SettingsScreen() {
   return (
-    <View className="flex-1 w-full items-center justify-center">
-      <Text className="text-4xl text-center">Settings</Text>
+    <View>
+      <Text>Settings</Text>
     </View>
-  )
+  );
 }
-
-export default Settings
