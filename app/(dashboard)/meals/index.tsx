@@ -63,7 +63,7 @@ const MealsScreen = () => {
   return (
     <View className="flex-1 w-full justify-center align-items-center">
       <Text className="text-center text-4xl">Meals screen</Text>
-      <View className="absolute bottom-5 right-5 z-40">
+      <View className="absolute bottom-5 right-24 z-40">
         <Pressable
           className="bg-blue-500 rounded-full p-5 shadow-lg"
           onPress={() => {

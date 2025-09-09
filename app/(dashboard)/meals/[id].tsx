@@ -10,10 +10,9 @@ import {
 import * as ImagePicker from "expo-image-picker";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { createMeal, getMealById, updateMeal } from "@/services/mealService";
+import { Meal } from "@/types/meal";
 import { useLoader } from "@/context/LoaderContext";
-import { storage } from "@/firebase";
-import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
-
+import { useAuth } from "@/context/AuthContext"; // Import your auth context
 const MealFormScreen = () => {
   const { id } = useLocalSearchParams<{ id?: string }>();
   const isNew = !id || id === "new";
@@ -22,7 +21,9 @@ const MealFormScreen = () => {
   const [image, setImage] = useState(""); // image URI
   const router = useRouter();
   const { hideLoader, showLoader } = useLoader();
-    const [uploading, setUploading] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const { user } = useAuth(); // Get user from auth context
+  const currentUserId = user?.uid; // Adjust based on your auth context structure
 
   useEffect(() => {
     const load = async () => {
@@ -31,9 +32,9 @@ const MealFormScreen = () => {
           showLoader();
           const meal = await getMealById(id);
           if (meal) {
-            setTitle(meal.title);
-            setDescription(meal.description);
-            setImage(meal.image || "");
+            setTitle((meal as Meal).title || "");
+            setDescription((meal as Meal).description || "");
+            setImage((meal as Meal).image || "");
           }
         } finally {
           hideLoader();
@@ -51,31 +52,46 @@ const MealFormScreen = () => {
       return;
     }
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      mediaTypes: ImagePicker.MediaTypeOptions.Images, // Use enum value as per expo-image-picker docs
       quality: 1,
     });
     if (!result.canceled && result.assets && result.assets.length > 0) {
       setImage(result.assets[0].uri);
     }
   };
-   const uploadImageAsync = async (uri) => {
-     if (!uri) return "";
-     setUploading(true);
-     try {
-       const response = await fetch(uri);
-       const blob = await response.blob();
-       const filename = `meals/${Date.now()}.jpg`;
-       const storageRef = ref(storage, filename);
-       await uploadBytes(storageRef, blob);
-       const downloadURL = await getDownloadURL(storageRef);
-       return downloadURL;
-     } catch (err) {
-       console.error("Image upload error:", err);
-       return "";
-     } finally {
-       setUploading(false);
-     }
-   };
+  // Cloudinary upload
+  const uploadImageAsync = async (uri: string) => {
+    if (!uri) return "";
+    setUploading(true);
+    try {
+      const data = new FormData();
+      data.append("file", {
+        uri,
+        type: "image/jpeg",
+        name: "upload.jpg",
+      } as any);
+      data.append("upload_preset", "my_preset"); // Replace with your preset
+
+      const res = await fetch(
+        "https://api.cloudinary.com/v1_1/dfwzzxgja/image/upload",
+        {
+          method: "POST",
+          body: data,
+        }
+      );
+      const result = await res.json();
+      if (!result.secure_url) {
+        console.error("Cloudinary upload failed:", result);
+        return "";
+      }
+      return result.secure_url;
+    } catch (err) {
+      console.error("Image upload error:", err);
+      return "";
+    } finally {
+      setUploading(false);
+    }
+  };
 
   const handleSubmit = async () => {
     if (!title.trim()) {
@@ -84,17 +100,25 @@ const MealFormScreen = () => {
     }
     try {
       showLoader();
-      let imageUrl = image;
+      let imageUrl = image ?? "";
       // If image is a local URI, upload it
-      if (image && image.startsWith("file://")) {
-        imageUrl = await uploadImageAsync(image);
+      if (imageUrl && imageUrl.startsWith("file://")) {
+        imageUrl = await uploadImageAsync(imageUrl);
       }
-      const mealData = { title, description, image: imageUrl };
-      if (isNew) {
-        await createMeal(mealData);
-      } else {
-        await updateMeal(id, mealData);
-      }
+const mealData = { 
+  title,
+  description,
+  image: imageUrl,
+  name: title, // or another value
+  userId: currentUserId ?? "", // get from auth context
+  favorite: false, // or your logic
+  date: new Date().toISOString() // Add current date in ISO format
+};
+if (isNew) {
+  await createMeal(mealData);
+} else {
+  await updateMeal(id, mealData);
+}
       router.back();
     } catch (err) {
       console.error("Error saving meal : ", err);

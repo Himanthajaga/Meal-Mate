@@ -13,7 +13,7 @@ const firebaseConfig = {
   apiKey: "AIzaSyDZgb1ekCDrv4cap45VyUZHjCbItVGGnfA",
   authDomain: "mealmate-5644d.firebaseapp.com",
   projectId: "mealmate-5644d",
-  storageBucket: "mealmate-5644d.firebasestorage.app",
+  storageBucket: "mealmate-5644d.appspot.com",
   messagingSenderId: "325456082891",
   appId: "1:325456082891:web:e89aaf149863f9e6bb284e",
   measurementId: "G-NFJM5846DS",

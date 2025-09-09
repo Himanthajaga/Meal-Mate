@@ -1,4 +1,4 @@
-import { db, storage } from "../firebase";
+import { db } from "../firebase";
 import {
   collection,
   addDoc,
@@ -10,7 +10,6 @@ import {
   where,
   getDoc,
 } from "firebase/firestore";
-import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 
 import { Meal } from "@/types/meal";
 
@@ -18,42 +17,31 @@ export const mealColRef = collection(db, "meals");
 
 export const createMeal = async (meal: Meal) => {
   let imageUrl = meal.image;
-  // If image is a local URI or base64, upload to Firebase Storage
-  if (
-    imageUrl &&
-    (imageUrl.startsWith("file://") || imageUrl.startsWith("data:image"))
-  ) {
-    try {
-      let blob: Blob | undefined;
-      if (imageUrl.startsWith("file://")) {
-        const response = await fetch(imageUrl);
-        blob = await response.blob();
-      } else if (imageUrl.startsWith("data:image")) {
-        // Convert base64 to blob
-        const base64 = imageUrl.split(",")[1];
-        const byteCharacters = atob(base64);
-        const byteNumbers = new Array(byteCharacters.length);
-        for (let i = 0; i < byteCharacters.length; i++) {
-          byteNumbers[i] = byteCharacters.charCodeAt(i);
-        }
-        const byteArray = new Uint8Array(byteNumbers);
-        blob = new Blob([byteArray], { type: "image/jpeg" });
-      }
-      if (blob) {
-        const filename = `meals/${Date.now()}.jpg`;
-        const storageRef = ref(storage, filename);
-        await uploadBytes(storageRef, blob);
-        imageUrl = await getDownloadURL(storageRef);
-      } else {
-        imageUrl = "";
-      }
-    } catch (err) {
-      console.error("Image upload error:", err);
-      imageUrl = "";
-    }
+  if (imageUrl && imageUrl.startsWith("file://")) {
+    imageUrl = await uploadImageToCloudinary(imageUrl);
   }
   const docRef = await addDoc(mealColRef, { ...meal, image: imageUrl });
   return docRef.id;
+};
+
+export const uploadImageToCloudinary = async (imageUri: string) => {
+  const data = new FormData();
+  data.append("file", {
+    uri: imageUri,
+    type: "image/jpeg",
+    name: "upload.jpg",
+  } as any);
+  data.append("upload_preset", "my_preset"); // Replace with your preset
+
+  const res = await fetch(
+    "https://api.cloudinary.com/v1_1/dfwzzxgja/image/upload",
+    {
+      method: "POST",
+      body: data,
+    }
+  );
+  const result = await res.json();
+  return result.secure_url;
 };
 
 export const getMeals = async (userId: string) => {
