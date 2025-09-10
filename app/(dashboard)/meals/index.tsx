@@ -1,5 +1,6 @@
 import { View, Text, Pressable, ScrollView, Alert } from "react-native";
 import MealCard from "@/components/MealCard";
+import RecipeQRScanner from "@/components/RecipeQRScanner";
 import React, { useEffect, useState } from "react";
 import {
   getMeals,
@@ -100,6 +101,17 @@ const MealsScreen = () => {
       </View>
 
       <ScrollView className="mt-4">
+        {/* Recipe QR Scanner */}
+        <View style={{ paddingHorizontal: 16, marginBottom: 16 }}>
+          <RecipeQRScanner
+            onRecipeScanned={(recipeData) => {
+              router.push({
+                pathname: "/(dashboard)/meals/new",
+                params: { prefilledData: JSON.stringify(recipeData) },
+              } as any);
+            }}
+          />
+        </View>
         {meals.map((meal) => (
           <View
             key={meal.id}

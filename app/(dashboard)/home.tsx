@@ -12,6 +12,7 @@ import { useTheme } from "../../context/ThemeContext";
 import { useAuth } from "../../context/AuthContext";
 import { useRouter } from "expo-router";
 import MealCard from "../../components/MealCard";
+import QuickCameraAction from "../../components/QuickCameraAction";
 import {
   getMeals,
   getPlannedMeals,
@@ -366,6 +367,9 @@ export default function HomeScreen() {
             onPress={() => router.push("/favourites")}
             color="#FFB347"
           />
+          <View style={{ marginRight: 16 }}>
+            <QuickCameraAction />
+          </View>
           <QuickActionCard
             icon="person"
             title="Profile"

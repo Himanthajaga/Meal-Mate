@@ -14,9 +14,14 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { createMeal, getMealById, updateMeal } from "@/services/mealService";
 import { Meal } from "@/types/meal";
 import { useLoader } from "@/context/LoaderContext";
-import { useAuth } from "@/context/AuthContext"; // Import your auth context
+import { useAuth } from "@/context/AuthContext";
+import IntegratedCamera from "@/components/IntegratedCamera";
 const MealFormScreen = () => {
-  const { id } = useLocalSearchParams<{ id?: string }>();
+  const { id, imageUri, prefilledData } = useLocalSearchParams<{
+    id?: string;
+    imageUri?: string;
+    prefilledData?: string;
+  }>();
   const isNew = !id || id === "new";
   const [title, setTitle] = useState("");
   const [name, setName] = useState("");
@@ -33,6 +38,7 @@ const MealFormScreen = () => {
   const [servings, setServings] = useState("");
   const [calories, setCalories] = useState("");
   const [isPlanned, setIsPlanned] = useState(false);
+  const [showCamera, setShowCamera] = useState(false);
   const router = useRouter();
   const { hideLoader, showLoader } = useLoader();
   const [uploading, setUploading] = useState(false);
@@ -41,6 +47,48 @@ const MealFormScreen = () => {
 
   useEffect(() => {
     const load = async () => {
+      // Set image from camera if provided
+      if (imageUri) {
+        setImage(imageUri as string);
+      }
+
+      // Handle prefilled data from QR recipe scans
+      if (prefilledData && isNew) {
+        try {
+          const recipeData = JSON.parse(prefilledData as string);
+          setTitle(recipeData.title || recipeData.name || "");
+          setName(recipeData.name || recipeData.title || "");
+          setDescription(
+            recipeData.description || recipeData.instructions || ""
+          );
+          setIngredients(
+            Array.isArray(recipeData.ingredients)
+              ? recipeData.ingredients.join(", ")
+              : recipeData.ingredients || ""
+          );
+          setCookingTime(
+            recipeData.cookingTime?.toString() ||
+              recipeData.prepTime?.toString() ||
+              ""
+          );
+          setServings(
+            recipeData.servings?.toString() ||
+              recipeData.serves?.toString() ||
+              ""
+          );
+          setCalories(
+            recipeData.calories?.toString() ||
+              recipeData.nutrition?.calories?.toString() ||
+              ""
+          );
+          if (recipeData.image || recipeData.imageUrl) {
+            setImage(recipeData.image || recipeData.imageUrl);
+          }
+        } catch (error) {
+          console.log("Error parsing prefilled data:", error);
+        }
+      }
+
       if (!isNew && id) {
         try {
           showLoader();
@@ -73,7 +121,7 @@ const MealFormScreen = () => {
       }
     };
     load();
-  }, [id]);
+  }, [id, imageUri, prefilledData]);
 
   // Image picker handler
   const pickImage = async () => {
@@ -90,6 +138,18 @@ const MealFormScreen = () => {
       setImage(result.assets[0].uri);
     }
   };
+
+  // Camera handlers
+  const handleCameraCapture = (imageUri: string) => {
+    setImage(imageUri);
+    setShowCamera(false);
+  };
+
+  const handleGallerySelect = (imageUri: string) => {
+    setImage(imageUri);
+    setShowCamera(false);
+  };
+
   // Cloudinary upload
   const uploadImageAsync = async (uri: string) => {
     if (!uri) return "";
@@ -261,7 +321,32 @@ const MealFormScreen = () => {
           </View>
         )}
         <Text style={{ fontSize: 16, color: "#fff", textAlign: "center" }}>
-          {image ? "Change Meal Image" : "Select Meal Image"}
+          {image ? "Change Meal Image" : "Select from Gallery"}
+        </Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity
+        style={{
+          backgroundColor: "#10b981",
+          borderRadius: 8,
+          padding: 15,
+          marginVertical: 8,
+          alignItems: "center",
+          flexDirection: "row",
+          justifyContent: "center",
+        }}
+        onPress={() => setShowCamera(true)}
+        disabled={uploading}
+      >
+        <Text
+          style={{
+            fontSize: 16,
+            color: "#fff",
+            textAlign: "center",
+            marginRight: 8,
+          }}
+        >
+          Take Photo with Camera
         </Text>
       </TouchableOpacity>
 
@@ -454,6 +539,16 @@ const MealFormScreen = () => {
           {uploading ? "Uploading..." : isNew ? "Add Meal" : "Update Meal"}
         </Text>
       </TouchableOpacity>
+
+      {/* Integrated Camera */}
+      <IntegratedCamera
+        visible={showCamera}
+        onClose={() => setShowCamera(false)}
+        onImageCaptured={handleCameraCapture}
+        onImageSelected={handleGallerySelect}
+        mode="photo"
+        title="Capture Meal Photo"
+      />
     </ScrollView>
   );
 };

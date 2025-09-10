@@ -33,6 +33,20 @@
           "resizeMode": "contain",
           "backgroundColor": "#ffffff"
         }
+      ],
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Allow Meal Mate to access your camera to take photos of your meals and scan QR codes."
+        }
+      ],
+      [
+        "expo-media-library",
+        {
+          "photosPermission": "Allow Meal Mate to save photos of your meals to your photo library.",
+          "savePhotosPermission": "Allow Meal Mate to save photos of your meals to your photo library.",
+          "isAccessMediaLocationEnabled": true
+        }
       ]
     ],
     "experiments": {

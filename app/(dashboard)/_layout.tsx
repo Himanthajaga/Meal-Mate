@@ -105,6 +105,7 @@ const DashboardLayout = () => {
             ),
           }}
         />
+  
         <Tabs.Screen
           name="profile"
           options={{
