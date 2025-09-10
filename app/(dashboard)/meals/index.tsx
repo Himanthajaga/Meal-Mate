@@ -1,22 +1,33 @@
 import { View, Text, Pressable, ScrollView, Alert } from "react-native";
 import MealCard from "@/components/MealCard";
 import React, { useEffect, useState } from "react";
-import { getMeals, deleteMeal } from "@/services/mealService";
+import {
+  getMeals,
+  deleteMeal,
+  toggleMealFavorite,
+} from "@/services/mealService";
 import { mealColRef } from "@/services/mealService";
 import { MaterialIcons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { Meal } from "@/types/meal";
 import { useLoader } from "@/context/LoaderContext";
-import { onSnapshot } from "firebase/firestore";
+import { useAuth } from "@/context/AuthContext";
+import { onSnapshot, query, where } from "firebase/firestore";
 
 const MealsScreen = () => {
   const [meals, setMeals] = useState<Meal[]>([]);
   const { hideLoader, showLoader } = useLoader();
+  const { user } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
+    if (!user) return;
+
+    // Query meals for the current user only
+    const userMealsQuery = query(mealColRef, where("userId", "==", user.uid));
+
     const unsubcribe = onSnapshot(
-      mealColRef,
+      userMealsQuery,
       (snapshot: { docs: any[] }) => {
         const mealList = snapshot.docs.map((mealRef) => ({
           id: mealRef.id,
@@ -29,7 +40,22 @@ const MealsScreen = () => {
       }
     );
     return () => unsubcribe();
-  }, []);
+  }, [user]);
+
+  const handleFavoriteToggle = async (meal: Meal) => {
+    if (!user) return;
+
+    try {
+      showLoader();
+      await toggleMealFavorite(meal.id!);
+      // The onSnapshot listener will automatically update the UI
+    } catch (error) {
+      Alert.alert("Error", "Failed to update favorite");
+      console.error(error);
+    } finally {
+      hideLoader();
+    }
+  };
 
   const handleDelete = (id: string) => {
     Alert.alert(
@@ -46,10 +72,9 @@ const MealsScreen = () => {
             showLoader();
             try {
               await deleteMeal(id);
-              setMeals((prevMeals) =>
-                prevMeals.filter((meal) => meal.id !== id)
-              );
+              // The onSnapshot listener will automatically update the UI
             } catch (error) {
+              Alert.alert("Error", "Failed to delete meal");
               console.error(error);
             } finally {
               hideLoader();
@@ -82,15 +107,9 @@ const MealsScreen = () => {
           >
             <MealCard
               meal={meal}
-              onFavorite={() => {}}
+              onFavorite={() => handleFavoriteToggle(meal)}
               onDelete={() => handleDelete(meal.id ?? "")}
             />
-            <Pressable
-              onPress={() => router.push(`/(dashboard)/meals/${meal.id}`)}
-              style={{ position: "absolute", top: 10, right: 16 }}
-            >
-              <Text style={{ color: "#3b82f6", fontWeight: "bold" }}>Edit</Text>
-            </Pressable>
           </View>
         ))}
       </ScrollView>

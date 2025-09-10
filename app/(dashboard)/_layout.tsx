@@ -1,11 +1,13 @@
-import { View, Text, SafeAreaView, ActivityIndicator } from 'react-native'
-import React, { useEffect } from 'react'
-import { Slot, Tabs, useRouter } from 'expo-router'
-import { MaterialIcons } from '@expo/vector-icons'
-import { useAuth } from '@/context/AuthContext'
+import { View, SafeAreaView, ActivityIndicator } from "react-native";
+import React, { useEffect } from "react";
+import { Tabs, useRouter } from "expo-router";
+import { MaterialIcons } from "@expo/vector-icons";
+import { useAuth } from "@/context/AuthContext";
+import { useTheme } from "@/context/ThemeContext";
 
 const DashboardLayout = () => {
   const { user, loading } = useAuth();
+  const { colors } = useTheme();
   const router = useRouter();
 
   useEffect(() => {
@@ -16,21 +18,38 @@ const DashboardLayout = () => {
 
   if (loading) {
     return (
-      <View className="flex-1 w-full justify-center align-items-center">
-        <ActivityIndicator size="large" />
+      <View
+        style={{
+          flex: 1,
+          backgroundColor: colors.background,
+          justifyContent: "center",
+          alignItems: "center",
+        }}
+      >
+        <ActivityIndicator size="large" color={colors.primary} />
       </View>
     );
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-white">
+    <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
       <Tabs
         screenOptions={{
           headerShown: false,
-          tabBarActiveTintColor: "#2ecc71",
-          tabBarInactiveTintColor: "#2c3e50",
+          tabBarActiveTintColor: colors.primary,
+          tabBarInactiveTintColor: colors.textSecondary,
           tabBarStyle: {
-            backgroundColor: "#bdc3c7",
+            backgroundColor: colors.card,
+            borderTopColor: colors.border,
+            borderTopWidth: 1,
+            paddingTop: 8,
+            paddingBottom: 8,
+            height: 70,
+          },
+          tabBarLabelStyle: {
+            fontSize: 12,
+            fontWeight: "600",
+            marginTop: 4,
           },
         }}
       >
@@ -38,25 +57,50 @@ const DashboardLayout = () => {
           name="home"
           options={{
             title: "Home",
-            tabBarIcon: (data) => (
+            tabBarIcon: ({ focused, size, color }) => (
               <MaterialIcons
-                name="home-filled"
-                size={data.size}
-                color={data.color}
+                name={focused ? "home" : "home"}
+                size={size}
+                color={color}
               />
             ),
           }}
         />
         <Tabs.Screen
           name="meals"
-          // name="tasks/index"
           options={{
             title: "Meals",
-            tabBarIcon: (data) => (
+            tabBarIcon: ({ focused, size, color }) => (
               <MaterialIcons
-                name="check-circle"
-                size={data.size}
-                color={data.color}
+                name={focused ? "restaurant-menu" : "restaurant-menu"}
+                size={size}
+                color={color}
+              />
+            ),
+          }}
+        />
+        <Tabs.Screen
+          name="favourites"
+          options={{
+            title: "Favorites",
+            tabBarIcon: ({ focused, size, color }) => (
+              <MaterialIcons
+                name={focused ? "favorite" : "favorite-border"}
+                size={size}
+                color={color}
+              />
+            ),
+          }}
+        />
+        <Tabs.Screen
+          name="plan"
+          options={{
+            title: "Planner",
+            tabBarIcon: ({ focused, size, color }) => (
+              <MaterialIcons
+                name={focused ? "calendar-today" : "calendar-today"}
+                size={size}
+                color={color}
               />
             ),
           }}
@@ -65,50 +109,24 @@ const DashboardLayout = () => {
           name="profile"
           options={{
             title: "Profile",
-            tabBarIcon: (data) => (
+            tabBarIcon: ({ focused, size, color }) => (
               <MaterialIcons
-                name="person"
-                size={data.size}
-                color={data.color}
+                name={focused ? "person" : "person-outline"}
+                size={size}
+                color={color}
               />
             ),
           }}
         />
         <Tabs.Screen
-          name="setting"
+          name="settings"
           options={{
-            title: "Setting",
-            tabBarIcon: (data) => (
+            title: "Settings",
+            tabBarIcon: ({ focused, size, color }) => (
               <MaterialIcons
-                name="settings"
-                size={data.size}
-                color={data.color}
-              />
-            ),
-          }}
-        />
-        <Tabs.Screen
-          name="favourites"
-          options={{
-            title: "Favourites",
-            tabBarIcon: (data) => (
-              <MaterialIcons
-                name="favorite"
-                size={data.size}
-                color={data.color}
-              />
-            ),
-          }}
-        />
-        <Tabs.Screen
-          name="Planner"
-          options={{
-            title: "Planner",
-            tabBarIcon: (data) => (
-              <MaterialIcons
-                name="check-circle"
-                size={data.size}
-                color={data.color}
+                name={focused ? "settings" : "settings"}
+                size={size}
+                color={color}
               />
             ),
           }}
@@ -116,6 +134,6 @@ const DashboardLayout = () => {
       </Tabs>
     </SafeAreaView>
   );
-}
+};
 
 export default DashboardLayout;

@@ -6,6 +6,8 @@ import {
   TouchableOpacity,
   Alert,
   Image,
+  ScrollView,
+  Switch,
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -17,8 +19,20 @@ const MealFormScreen = () => {
   const { id } = useLocalSearchParams<{ id?: string }>();
   const isNew = !id || id === "new";
   const [title, setTitle] = useState("");
+  const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [image, setImage] = useState(""); // image URI
+  const [mealType, setMealType] = useState<
+    "breakfast" | "lunch" | "dinner" | "snack"
+  >("breakfast");
+  const [plannedDate, setPlannedDate] = useState(
+    new Date().toISOString().split("T")[0]
+  );
+  const [ingredients, setIngredients] = useState("");
+  const [cookingTime, setCookingTime] = useState("");
+  const [servings, setServings] = useState("");
+  const [calories, setCalories] = useState("");
+  const [isPlanned, setIsPlanned] = useState(false);
   const router = useRouter();
   const { hideLoader, showLoader } = useLoader();
   const [uploading, setUploading] = useState(false);
@@ -32,9 +46,26 @@ const MealFormScreen = () => {
           showLoader();
           const meal = await getMealById(id);
           if (meal) {
-            setTitle((meal as Meal).title || "");
-            setDescription((meal as Meal).description || "");
-            setImage((meal as Meal).image || "");
+            const mealData = meal as Meal;
+            setTitle(mealData.title || "");
+            setName(mealData.name || "");
+            setDescription(mealData.description || "");
+            setImage(mealData.image || "");
+            setMealType(mealData.mealType || "breakfast");
+            setPlannedDate(
+              mealData.plannedDate
+                ? mealData.plannedDate.split("T")[0]
+                : new Date().toISOString().split("T")[0]
+            );
+            setIngredients(
+              mealData.ingredients ? mealData.ingredients.join(", ") : ""
+            );
+            setCookingTime(
+              mealData.cookingTime ? mealData.cookingTime.toString() : ""
+            );
+            setServings(mealData.servings ? mealData.servings.toString() : "");
+            setCalories(mealData.calories ? mealData.calories.toString() : "");
+            setIsPlanned(mealData.isPlanned || false);
           }
         } finally {
           hideLoader();
@@ -105,20 +136,30 @@ const MealFormScreen = () => {
       if (imageUrl && imageUrl.startsWith("file://")) {
         imageUrl = await uploadImageAsync(imageUrl);
       }
-const mealData = { 
-  title,
-  description,
-  image: imageUrl,
-  name: title, // or another value
-  userId: currentUserId ?? "", // get from auth context
-  favorite: false, // or your logic
-  date: new Date().toISOString() // Add current date in ISO format
-};
-if (isNew) {
-  await createMeal(mealData);
-} else {
-  await updateMeal(id, mealData);
-}
+      const mealData: Meal = {
+        title,
+        name,
+        description,
+        image: imageUrl,
+        userId: currentUserId ?? "",
+        favorite: false,
+        date: new Date().toISOString(),
+        mealType,
+        plannedDate: plannedDate + "T12:00:00.000Z",
+        ingredients: ingredients
+          .split(",")
+          .map((i) => i.trim())
+          .filter((i) => i),
+        cookingTime: cookingTime ? parseInt(cookingTime) : undefined,
+        servings: servings ? parseInt(servings) : undefined,
+        calories: calories ? parseInt(calories) : undefined,
+        isPlanned,
+      };
+      if (isNew) {
+        await createMeal(mealData);
+      } else {
+        await updateMeal(id, mealData);
+      }
       router.back();
     } catch (err) {
       console.error("Error saving meal : ", err);
@@ -128,59 +169,277 @@ if (isNew) {
     }
   };
   return (
-    <View style={{ flex: 1, width: "100%", padding: 20 }}>
-      <Text style={{ fontSize: 24, fontWeight: "bold" }}>
+    <ScrollView style={{ flex: 1, padding: 20 }}>
+      <Text style={{ fontSize: 24, fontWeight: "bold", marginBottom: 20 }}>
         {isNew ? "Add Meal" : "Edit Meal"}
+      </Text>
+
+      <TextInput
+        style={{
+          borderWidth: 1,
+          borderColor: "#ccc",
+          padding: 12,
+          marginVertical: 8,
+          borderRadius: 8,
+          fontSize: 16,
+          backgroundColor: "#fff",
+        }}
+        placeholder="Meal Title *"
+        placeholderTextColor="#999"
+        value={title}
+        onChangeText={setTitle}
+      />
+
+      <TextInput
+        style={{
+          borderWidth: 1,
+          borderColor: "#ccc",
+          padding: 12,
+          marginVertical: 8,
+          borderRadius: 8,
+          fontSize: 16,
+          backgroundColor: "#fff",
+        }}
+        placeholder="Meal Name *"
+        placeholderTextColor="#999"
+        value={name}
+        onChangeText={setName}
+      />
+
+      <TextInput
+        style={{
+          borderWidth: 1,
+          borderColor: "#ccc",
+          padding: 12,
+          marginVertical: 8,
+          borderRadius: 8,
+          fontSize: 16,
+          height: 80,
+          textAlignVertical: "top",
+          backgroundColor: "#fff",
+        }}
+        placeholder="Meal Description"
+        placeholderTextColor="#999"
+        value={description}
+        onChangeText={setDescription}
+        multiline
+      />
+      <TouchableOpacity
+        style={{
+          backgroundColor: "#fbbf24",
+          borderRadius: 8,
+          padding: 15,
+          marginVertical: 8,
+          alignItems: "center",
+        }}
+        onPress={pickImage}
+        disabled={uploading}
+      >
+        {image ? (
+          <Image
+            source={{ uri: image }}
+            style={{
+              width: 100,
+              height: 100,
+              borderRadius: 8,
+              marginBottom: 8,
+            }}
+          />
+        ) : (
+          <View
+            style={{
+              width: 100,
+              height: 100,
+              backgroundColor: "#ccc",
+              borderRadius: 8,
+              justifyContent: "center",
+              alignItems: "center",
+              marginBottom: 8,
+            }}
+          >
+            <Text>Add Photo</Text>
+          </View>
+        )}
+        <Text style={{ fontSize: 16, color: "#fff", textAlign: "center" }}>
+          {image ? "Change Meal Image" : "Select Meal Image"}
+        </Text>
+      </TouchableOpacity>
+
+      <Text
+        style={{
+          fontSize: 16,
+          fontWeight: "bold",
+          marginTop: 15,
+          marginBottom: 10,
+        }}
+      >
+        Meal Type
+      </Text>
+      <View style={{ flexDirection: "row", marginBottom: 15 }}>
+        {["breakfast", "lunch", "dinner", "snack"].map((type) => (
+          <TouchableOpacity
+            key={type}
+            onPress={() => setMealType(type as any)}
+            style={{
+              backgroundColor: mealType === type ? "#007AFF" : "#e0e0e0",
+              padding: 10,
+              borderRadius: 8,
+              marginRight: 10,
+            }}
+          >
+            <Text
+              style={{
+                color: mealType === type ? "white" : "black",
+                textTransform: "capitalize",
+              }}
+            >
+              {type}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+
+      <Text style={{ fontSize: 16, fontWeight: "bold", marginBottom: 5 }}>
+        Planned Date
       </Text>
       <TextInput
         style={{
           borderWidth: 1,
           borderColor: "#ccc",
-          padding: 8,
+          padding: 12,
           marginVertical: 8,
-          borderRadius: 6,
+          borderRadius: 8,
+          fontSize: 16,
+          backgroundColor: "#fff",
         }}
-        placeholder="Meal title"
-        value={title}
-        onChangeText={setTitle}
+        placeholder="YYYY-MM-DD"
+        placeholderTextColor="#999"
+        value={plannedDate}
+        onChangeText={setPlannedDate}
       />
+
       <TextInput
         style={{
           borderWidth: 1,
           borderColor: "#ccc",
-          padding: 8,
-          marginVertical: 8,
-          borderRadius: 6,
-        }}
-        placeholder="Meal description"
-        value={description}
-        onChangeText={setDescription}
-      />
-      <TouchableOpacity
-        style={{
-          backgroundColor: "#fbbf24",
-          borderRadius: 6,
           padding: 12,
           marginVertical: 8,
+          borderRadius: 8,
+          fontSize: 16,
+          backgroundColor: "#fff",
         }}
-        onPress={pickImage}
-        disabled={uploading}
-      >
-        <Text style={{ fontSize: 16, color: "#fff", textAlign: "center" }}>
-          {image ? "Change Meal Image" : "Select Meal Image"}
-        </Text>
-      </TouchableOpacity>
-      {image ? (
-        <Image
-          source={{ uri: image }}
+        placeholder="Ingredients (comma-separated)"
+        placeholderTextColor="#999"
+        value={ingredients}
+        onChangeText={setIngredients}
+      />
+
+      <View style={{ flexDirection: "row", marginVertical: 8 }}>
+        <TextInput
           style={{
-            width: "100%",
-            height: 180,
+            borderWidth: 1,
+            borderColor: "#ccc",
+            padding: 12,
             borderRadius: 8,
+            fontSize: 16,
+            flex: 1,
+            marginRight: 5,
+            backgroundColor: "#fff",
+          }}
+          placeholder="Cooking time (min)"
+          placeholderTextColor="#999"
+          value={cookingTime}
+          onChangeText={setCookingTime}
+          keyboardType="numeric"
+        />
+        <TextInput
+          style={{
+            borderWidth: 1,
+            borderColor: "#ccc",
+            padding: 12,
+            borderRadius: 8,
+            fontSize: 16,
+            flex: 1,
+            marginHorizontal: 5,
+            backgroundColor: "#fff",
+          }}
+          placeholder="Servings"
+          placeholderTextColor="#999"
+          value={servings}
+          onChangeText={setServings}
+          keyboardType="numeric"
+        />
+        <TextInput
+          style={{
+            borderWidth: 1,
+            borderColor: "#ccc",
+            padding: 12,
+            borderRadius: 8,
+            fontSize: 16,
+            flex: 1,
+            marginLeft: 5,
+            backgroundColor: "#fff",
+          }}
+          placeholder="Calories"
+          placeholderTextColor="#999"
+          value={calories}
+          onChangeText={setCalories}
+          keyboardType="numeric"
+        />
+      </View>
+
+      <View
+        style={{
+          backgroundColor: "#f8f9fa",
+          padding: 15,
+          borderRadius: 8,
+          marginVertical: 15,
+        }}
+      >
+        <View
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
             marginBottom: 8,
           }}
-        />
-      ) : null}
+        >
+          <Switch
+            value={isPlanned}
+            onValueChange={setIsPlanned}
+            trackColor={{ false: "#ccc", true: "#007AFF" }}
+            thumbColor={isPlanned ? "#fff" : "#f4f3f4"}
+          />
+          <Text style={{ marginLeft: 10, fontSize: 16, fontWeight: "600" }}>
+            Schedule this meal
+          </Text>
+        </View>
+        <Text style={{ fontSize: 14, color: "#666", marginLeft: 35 }}>
+          {isPlanned
+            ? `This meal will be scheduled for ${mealType} on ${new Date(plannedDate).toLocaleDateString()}`
+            : "Enable this to automatically add this meal to your planned meals for the selected date and meal type"}
+        </Text>
+
+        {isPlanned && (
+          <View style={{ marginTop: 12, marginLeft: 35 }}>
+            <Text style={{ fontSize: 16, fontWeight: "600", marginBottom: 8 }}>
+              Schedule Date
+            </Text>
+            <TextInput
+              style={{
+                borderWidth: 1,
+                borderColor: "#ccc",
+                padding: 12,
+                borderRadius: 8,
+                fontSize: 16,
+                backgroundColor: "#fff",
+              }}
+              placeholder="YYYY-MM-DD"
+              value={plannedDate}
+              onChangeText={setPlannedDate}
+            />
+          </View>
+        )}
+      </View>
       <TouchableOpacity
         style={{
           backgroundColor: "#3b82f6",
@@ -195,7 +454,7 @@ if (isNew) {
           {uploading ? "Uploading..." : isNew ? "Add Meal" : "Update Meal"}
         </Text>
       </TouchableOpacity>
-    </View>
+    </ScrollView>
   );
 };
 
