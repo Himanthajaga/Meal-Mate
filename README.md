@@ -69,6 +69,17 @@
 - **Error Handling**: Graceful handling of invalid QR codes
 - **Mode Switching**: Toggle between camera and scanner modes
 
+### 🔔 **Smart Notification System**
+
+- **Scheduled Meal Reminders**: Automatic notifications for planned meals
+- **Custom Notification Times**: Set personalized reminder times for each meal type
+- **Meal Type Controls**: Individual settings for breakfast, lunch, dinner, and snack notifications
+- **Permission Management**: Proper notification permission handling for Android/iOS
+- **Test Notifications**: Built-in functionality to test notification delivery
+- **Persistent Settings**: Notification preferences saved using AsyncStorage
+- **Real-time Scheduling**: Automatic notification scheduling when meals are planned
+- **Smart Cleanup**: Automatic removal of notifications when meals are deleted or rescheduled
+
 ### 🎨 **Theme System**
 
 - **Dark/Light Mode**: Complete theme switching
@@ -122,9 +133,10 @@
   "react": "19.0.0",
   "react-native": "0.79.5",
   "expo-camera": "^17.0.6",
-  "expo-barcode-scanner": "^13.0.1",
+  "expo-notifications": "~0.33.0",
   "firebase": "^12.2.1",
-  "typescript": "~5.8.3"
+  "typescript": "~5.8.3",
+  "@expo/vector-icons": "^14.0.0"
 }
 ```
 
@@ -135,6 +147,14 @@
 - **Media Library**: expo-media-library for photo saving
 - **Barcode Scanning**: expo-barcode-scanner for QR codes
 - **Permissions**: Proper runtime permission handling
+
+### **Notifications**
+
+- **Expo Notifications**: expo-notifications for cross-platform push notifications
+- **Permission Handling**: Automatic notification permission requests
+- **Scheduling System**: Date-based notification scheduling with proper trigger types
+- **Settings Persistence**: AsyncStorage for notification preferences
+- **Channel Management**: Android notification channels for categorized notifications
 
 ---
 
@@ -155,6 +175,7 @@
 │   │   ├── camera.tsx               # Camera & QR scanner
 │   │   ├── favourites.tsx           # Favorites management
 │   │   ├── home.tsx                 # Dashboard home
+│   │   ├── notifications.tsx        # Notification settings
 │   │   ├── plan.tsx                 # Meal planning calendar
 │   │   ├── profile.tsx              # User profile
 │   │   └── _layout.tsx              # Main app layout
@@ -165,6 +186,7 @@
 │   ├── FooterNav.tsx                # Navigation footer
 │   ├── Loader.tsx                   # Loading indicator
 │   ├── MealCard.tsx                 # Meal display card
+│   ├── NotificationSettings.tsx     # Notification preferences UI
 │   └── QRCodeShare.tsx              # QR code sharing
 ├── 📁 context/                      # React Context providers
 │   ├── AuthContext.tsx              # Authentication state
@@ -173,6 +195,7 @@
 ├── 📁 services/                     # API & business logic
 │   ├── authService.ts               # Authentication services
 │   ├── mealService.ts               # Meal CRUD operations
+│   ├── notificationService.ts       # Notification scheduling & management
 │   └── userService.ts               # User profile services
 ├── 📁 types/                        # TypeScript definitions
 │   ├── meal.ts                      # Meal data types
@@ -210,6 +233,22 @@ export const getMealsByTypeAndDate = async (userId: string, date: string, mealTy
 export const toggleMealFavorite = async (mealId: string)
 export const getFavoriteMeals = async (userId: string)
 export const ensureFavoriteField = async (userId: string)
+export const scheduleNotificationForMeal = async (meal: Meal)
+```
+
+### **Notification Services**
+
+```typescript
+// Comprehensive notification management system
+export const requestNotificationPermissions = async ()
+export const scheduleMealNotification = async (meal: Meal, reminderTime: Date)
+export const cancelMealNotification = async (mealId: string)
+export const getNotificationSettings = async ()
+export const updateNotificationSettings = async (settings: NotificationSettings)
+export const sendTestNotification = async (mealType: string, reminderTime: Date)
+export const initializeNotifications = async ()
+export const getAllScheduledNotifications = async ()
+export const clearAllNotifications = async ()
 ```
 
 ### **User Profile Services**
@@ -260,7 +299,17 @@ export const saveToLibrary = async (uri: string)
 - **Meal Type Selection**: Breakfast, lunch, dinner, snack buttons
 - **Image Management**: Gallery picker + camera integration
 - **Schedule Meal**: Option to directly schedule meal during creation
+- **Notification Reminders**: Set custom reminder times for individual meals
 - **Form Validation**: Required field validation and error handling
+
+### **🔔 Notification Settings**
+
+- **Meal Type Controls**: Individual notification toggles for each meal type
+- **Custom Reminder Times**: Personalized notification scheduling for breakfast, lunch, dinner, and snacks
+- **Test Notifications**: Built-in test functionality to verify notification delivery
+- **Permission Management**: Automatic handling of notification permissions
+- **Real-time Updates**: Instant settings synchronization across the app
+- **Persistent Storage**: Settings automatically saved and restored
 
 ### **📅 Meal Planning Calendar**
 
@@ -318,6 +367,24 @@ interface Meal {
   servings?: number;
   calories?: number;
   isPlanned?: boolean;
+  reminderTime?: string;
+  notificationId?: string;
+}
+```
+
+### **Notification Settings Model**
+
+```typescript
+interface NotificationSettings {
+  enabled: boolean;
+  breakfastEnabled: boolean;
+  lunchEnabled: boolean;
+  dinnerEnabled: boolean;
+  snackEnabled: boolean;
+  breakfastTime: string;
+  lunchTime: string;
+  dinnerTime: string;
+  snackTime: string;
 }
 ```
 
@@ -354,8 +421,9 @@ interface UserProfile {
 
 - **Camera**: Required for photo capture and QR scanning
 - **Media Library**: Needed for photo saving and gallery access
+- **Notifications**: Required for meal reminder notifications
 - **Internet**: Required for Firebase and Cloudinary operations
-- **Storage**: Local storage for theme preferences
+- **Storage**: Local storage for theme preferences and notification settings
 
 ---
 
@@ -460,6 +528,7 @@ npm run lint       # Run ESLint
 ## 🏆 Key Achievements
 
 ✅ **Complete Meal Management System**  
+✅ **Smart Notification & Reminder System**  
 ✅ **Advanced Camera & QR Code Integration**  
 ✅ **Real-time Synchronization**  
 ✅ **Modern UI with Theme Support**  
