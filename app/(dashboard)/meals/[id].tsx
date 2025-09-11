@@ -16,6 +16,8 @@ import { Meal } from "@/types/meal";
 import { useLoader } from "@/context/LoaderContext";
 import { useAuth } from "@/context/AuthContext";
 import IntegratedCamera from "@/components/IntegratedCamera";
+import NotificationService from "@/services/notificationService";
+import { MaterialIcons } from "@expo/vector-icons";
 const MealFormScreen = () => {
   const { id, imageUri, prefilledData } = useLocalSearchParams<{
     id?: string;
@@ -39,6 +41,8 @@ const MealFormScreen = () => {
   const [calories, setCalories] = useState("");
   const [isPlanned, setIsPlanned] = useState(false);
   const [showCamera, setShowCamera] = useState(false);
+  const [reminderEnabled, setReminderEnabled] = useState(true);
+  const [reminderTime, setReminderTime] = useState("");
   const router = useRouter();
   const { hideLoader, showLoader } = useLoader();
   const [uploading, setUploading] = useState(false);
@@ -114,6 +118,14 @@ const MealFormScreen = () => {
             setServings(mealData.servings ? mealData.servings.toString() : "");
             setCalories(mealData.calories ? mealData.calories.toString() : "");
             setIsPlanned(mealData.isPlanned || false);
+
+            // Set reminder defaults
+            setReminderEnabled(mealData.isPlanned || false);
+            setReminderTime(
+              NotificationService.getDefaultNotificationTimes()[
+                mealData.mealType || "lunch"
+              ]
+            );
           }
         } finally {
           hideLoader();
@@ -215,12 +227,40 @@ const MealFormScreen = () => {
         calories: calories ? parseInt(calories) : undefined,
         isPlanned,
       };
+      let mealId: string;
       if (isNew) {
-        await createMeal(mealData);
+        mealId = await createMeal(mealData);
       } else {
         await updateMeal(id, mealData);
+        mealId = id;
       }
-      router.back();
+
+      // Handle notification scheduling
+      if (isPlanned && reminderEnabled) {
+        const notificationTime =
+          reminderTime ||
+          NotificationService.getDefaultNotificationTimes()[mealType];
+        await NotificationService.scheduleMealNotification({
+          id: mealId,
+          title: title || name,
+          name: name || title,
+          mealType,
+          plannedDate,
+          reminderTime: notificationTime,
+        });
+
+        Alert.alert(
+          "Meal Saved",
+          `Your meal has been saved and a reminder is set for ${NotificationService.formatNotificationTime(notificationTime)} on ${new Date(plannedDate).toLocaleDateString()}`,
+          [{ text: "OK", onPress: () => router.back() }]
+        );
+      } else {
+        // Cancel notification if meal is no longer planned or reminder is disabled
+        if (!isNew) {
+          await NotificationService.cancelMealNotification(mealId);
+        }
+        router.back();
+      }
     } catch (err) {
       console.error("Error saving meal : ", err);
       Alert.alert("Error", "Fail to save meal");
@@ -525,6 +565,127 @@ const MealFormScreen = () => {
           </View>
         )}
       </View>
+
+      {/* Notification Settings */}
+      {isPlanned && (
+        <View
+          style={{
+            backgroundColor: "#f0f9ff",
+            padding: 15,
+            borderRadius: 8,
+            marginVertical: 10,
+            borderWidth: 1,
+            borderColor: "#3b82f6",
+          }}
+        >
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              marginBottom: 12,
+            }}
+          >
+            <MaterialIcons name="notifications" size={24} color="#3b82f6" />
+            <Text
+              style={{
+                marginLeft: 10,
+                fontSize: 18,
+                fontWeight: "600",
+                color: "#1e40af",
+              }}
+            >
+              Meal Reminder
+            </Text>
+          </View>
+
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              marginBottom: 12,
+            }}
+          >
+            <Switch
+              value={reminderEnabled}
+              onValueChange={setReminderEnabled}
+              trackColor={{ false: "#ccc", true: "#3b82f6" }}
+              thumbColor={reminderEnabled ? "#fff" : "#f4f3f4"}
+            />
+            <Text style={{ marginLeft: 10, fontSize: 16 }}>
+              Send reminder notification
+            </Text>
+          </View>
+
+          {reminderEnabled && (
+            <View style={{ marginLeft: 35 }}>
+              <Text style={{ fontSize: 14, color: "#666", marginBottom: 8 }}>
+                Default time:{" "}
+                {NotificationService.formatNotificationTime(
+                  reminderTime ||
+                    NotificationService.getDefaultNotificationTimes()[mealType]
+                )}
+              </Text>
+              <TouchableOpacity
+                style={{
+                  backgroundColor: "#3b82f6",
+                  paddingVertical: 8,
+                  paddingHorizontal: 16,
+                  borderRadius: 6,
+                  alignSelf: "flex-start",
+                }}
+                onPress={() => {
+                  Alert.prompt(
+                    "Set Reminder Time",
+                    "Enter time (HH:MM format)",
+                    [
+                      { text: "Cancel", style: "cancel" },
+                      {
+                        text: "Set",
+                        onPress: (time) => {
+                          if (
+                            time &&
+                            /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/.test(time)
+                          ) {
+                            setReminderTime(time);
+                          } else {
+                            Alert.alert(
+                              "Invalid Time",
+                              "Please enter a valid time in HH:MM format"
+                            );
+                          }
+                        },
+                      },
+                    ],
+                    "plain-text",
+                    reminderTime ||
+                      NotificationService.getDefaultNotificationTimes()[
+                        mealType
+                      ]
+                  );
+                }}
+              >
+                <Text
+                  style={{ color: "white", fontSize: 14, fontWeight: "500" }}
+                >
+                  Change Time
+                </Text>
+              </TouchableOpacity>
+            </View>
+          )}
+
+          <Text
+            style={{
+              fontSize: 12,
+              color: "#666",
+              marginTop: 8,
+              fontStyle: "italic",
+            }}
+          >
+            📱 You'll receive a notification at the scheduled time to remind you
+            about this meal
+          </Text>
+        </View>
+      )}
       <TouchableOpacity
         style={{
           backgroundColor: "#3b82f6",

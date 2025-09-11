@@ -4,6 +4,8 @@ import { Tabs, useRouter } from "expo-router";
 import { MaterialIcons } from "@expo/vector-icons";
 import { useAuth } from "@/context/AuthContext";
 import { useTheme } from "@/context/ThemeContext";
+import NotificationService from "@/services/notificationService";
+import { scheduleNotificationsForPlannedMeals } from "@/services/mealService";
 
 const DashboardLayout = () => {
   const { user, loading } = useAuth();
@@ -15,6 +17,27 @@ const DashboardLayout = () => {
       router.push("/login");
     }
   }, [user, loading]);
+
+  // Initialize notifications when user is logged in
+  useEffect(() => {
+    const initializeNotifications = async () => {
+      if (user) {
+        // Initialize notification service
+        await NotificationService.initialize();
+
+        // Set up notification response listener
+        const subscription =
+          NotificationService.setupNotificationResponseListener();
+
+        // Schedule notifications for existing planned meals
+        await scheduleNotificationsForPlannedMeals(user.uid);
+
+        return () => subscription.remove();
+      }
+    };
+
+    initializeNotifications();
+  }, [user]);
 
   if (loading) {
     return (
@@ -105,7 +128,7 @@ const DashboardLayout = () => {
             ),
           }}
         />
-  
+
         <Tabs.Screen
           name="profile"
           options={{
@@ -130,6 +153,12 @@ const DashboardLayout = () => {
                 color={color}
               />
             ),
+          }}
+        />
+        <Tabs.Screen
+          name="notifications"
+          options={{
+            href: null, // Hide from tab bar, accessible via navigation
           }}
         />
       </Tabs>

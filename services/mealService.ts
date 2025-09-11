@@ -12,6 +12,8 @@ import {
 } from "firebase/firestore";
 
 import { Meal } from "@/types/meal";
+import NotificationService from "./notificationService";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 export const mealColRef = collection(db, "meals");
 
@@ -28,7 +30,17 @@ export const createMeal = async (meal: Meal) => {
     createdAt: new Date().toISOString(),
   };
   const docRef = await addDoc(mealColRef, mealData);
-  return docRef.id;
+  const mealId = docRef.id;
+
+  // Schedule notification if meal is planned and notifications are enabled
+  if (meal.isPlanned && meal.plannedDate) {
+    await scheduleNotificationForMeal({
+      id: mealId,
+      ...mealData,
+    } as Meal & { id: string });
+  }
+
+  return mealId;
 };
 
 export const uploadImageToCloudinary = async (imageUri: string) => {
@@ -69,9 +81,33 @@ export const getMealById = async (id: string) => {
 export const updateMeal = async (id: string, meal: Partial<Meal>) => {
   const docRef = doc(db, "meals", id);
   await updateDoc(docRef, meal);
+
+  // Handle notification updates
+  if (meal.isPlanned !== undefined || meal.plannedDate || meal.mealType) {
+    // Get the full meal data
+    const fullMeal = (await getMealById(id)) as (Meal & { id: string }) | null;
+    if (fullMeal) {
+      if (fullMeal.isPlanned && fullMeal.plannedDate) {
+        // Update notification
+        await NotificationService.updateMealNotification({
+          id: fullMeal.id,
+          title: fullMeal.title || "",
+          name: fullMeal.name || "",
+          mealType: fullMeal.mealType || "lunch",
+          plannedDate: fullMeal.plannedDate,
+        });
+      } else {
+        // Cancel notification if meal is no longer planned
+        await cancelNotificationForMeal(id);
+      }
+    }
+  }
 };
 
 export const deleteMeal = async (id: string) => {
+  // Cancel any scheduled notifications for this meal
+  await cancelNotificationForMeal(id);
+
   const docRef = doc(db, "meals", id);
   await deleteDoc(docRef);
 };
@@ -181,4 +217,76 @@ export const ensureFavoriteField = async (userId: string) => {
 
   await Promise.all(updatePromises);
   console.log("Finished updating meals with favorite field");
+};
+
+// Notification-related functions
+export const scheduleNotificationForMeal = async (
+  meal: Meal & { id: string }
+) => {
+  try {
+    // Check if notifications are enabled
+    const settings = await getNotificationSettings();
+    if (!settings.enabled) return;
+
+    // Check if this meal type has notifications enabled
+    const mealTypeSettings = settings[meal.mealType as keyof typeof settings];
+    if (
+      !mealTypeSettings ||
+      typeof mealTypeSettings !== "object" ||
+      !mealTypeSettings.enabled
+    ) {
+      return;
+    }
+
+    await NotificationService.scheduleMealNotification({
+      id: meal.id,
+      title: meal.title || "",
+      name: meal.name || "",
+      mealType: meal.mealType || "lunch",
+      plannedDate: meal.plannedDate || "",
+      reminderTime: mealTypeSettings.time,
+    });
+  } catch (error) {
+    console.error("Error scheduling notification for meal:", error);
+  }
+};
+
+export const cancelNotificationForMeal = async (mealId: string) => {
+  try {
+    await NotificationService.cancelMealNotification(mealId);
+  } catch (error) {
+    console.error("Error cancelling notification for meal:", error);
+  }
+};
+
+const getNotificationSettings = async () => {
+  try {
+    const stored = await AsyncStorage.getItem("notification_settings");
+    if (stored) {
+      return JSON.parse(stored);
+    }
+  } catch (error) {
+    console.error("Error getting notification settings:", error);
+  }
+
+  // Return default settings
+  return {
+    enabled: true,
+    breakfast: { enabled: true, time: "08:00" },
+    lunch: { enabled: true, time: "12:00" },
+    dinner: { enabled: true, time: "18:00" },
+    snack: { enabled: false, time: "15:00" },
+  };
+};
+
+// Schedule notifications for all planned meals
+export const scheduleNotificationsForPlannedMeals = async (userId: string) => {
+  try {
+    const plannedMeals = await getPlannedMeals(userId);
+    for (const meal of plannedMeals) {
+      await scheduleNotificationForMeal(meal as Meal & { id: string });
+    }
+  } catch (error) {
+    console.error("Error scheduling notifications for planned meals:", error);
+  }
 };

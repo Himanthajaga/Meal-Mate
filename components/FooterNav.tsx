@@ -27,7 +27,7 @@ const FooterNav = () => {
       {tabs.map((tab) => (
         <TouchableOpacity
           key={tab.label}
-          onPress={() => router.push(tab.route)}
+          onPress={() => router.push(tab.route as any)}
           style={{ alignItems: "center", flex: 1 }}
         >
           <Text style={{ fontSize: 14 }}>{tab.label}</Text>

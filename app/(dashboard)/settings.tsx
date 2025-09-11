@@ -16,7 +16,7 @@ import { getUserProfile } from "../../services/userService";
 
 export default function SettingsScreen() {
   const { colors, isDark, toggleTheme } = useTheme();
-  const { user, logout } = useAuth();
+  const { user, signOut } = useAuth();
   const router = useRouter();
   const [userProfile, setUserProfile] = useState<any>(null);
 
@@ -42,7 +42,7 @@ export default function SettingsScreen() {
         style: "destructive",
         onPress: async () => {
           try {
-            await logout();
+            await signOut();
             router.replace("/login");
           } catch (error) {
             Alert.alert("Error", "Failed to sign out");
@@ -254,9 +254,7 @@ export default function SettingsScreen() {
           icon="notifications"
           title="Notifications"
           subtitle="Manage meal reminders and updates"
-          onPress={() =>
-            Alert.alert("Coming Soon", "This feature will be available soon")
-          }
+          onPress={() => router.push("/notifications" as any)}
         />
         <SettingsItem
           icon="language"
