@@ -4,7 +4,15 @@
 
 ## 📱 Overview
 
-**Meal Mate** is a comprehensive React Native mobile application built with Expo that helps users plan, manage, and organize their meals efficiently. The app combines meal creation, planning, favorites management, and advanced camera functionality with QR code scanning capabilities.
+**Meal Mate** is a comprehensive React Native mobile application built with Expo that helps users plan, manage, and organize their meals efficiently. The app combines meal creation,### **Notification Settings**
+
+- **Meal Type Controls**: Individual notification toggles for each meal type
+- **Custom Reminder Times**: Personalized notification scheduling for breakfast, lunch, dinner, and snacks
+- **Meal Planning Reminders**: Option to enable daily reminders to plan meals in advance
+- **Test Notifications**: Built-in test functionality to verify notification delivery
+- **Permission Management**: Automatic handling of notification permissions
+- **Real-time Updates**: Instant settings synchronization across the app
+- **Persistent Storage**: Settings automatically saved and restoredg, favorites management, and advanced camera functionality with QR code scanning capabilities.
 
 ---
 
@@ -74,6 +82,7 @@
 - **Scheduled Meal Reminders**: Automatic notifications for planned meals
 - **Custom Notification Times**: Set personalized reminder times for each meal type
 - **Meal Type Controls**: Individual settings for breakfast, lunch, dinner, and snack notifications
+- **Meal Planning Reminders**: Daily reminders to plan meals in advance
 - **Permission Management**: Proper notification permission handling for Android/iOS
 - **Test Notifications**: Built-in functionality to test notification delivery
 - **Persistent Settings**: Notification preferences saved using AsyncStorage
@@ -110,7 +119,7 @@
 
 ### **Frontend Architecture**
 
-- **Framework**: React Native with Expo SDK 53
+- **Framework**: React Native with Expo SDK 54
 - **Language**: TypeScript for type safety
 - **Navigation**: Expo Router with file-based routing
 - **Styling**: NativeWind (Tailwind CSS) + inline styles
@@ -129,14 +138,14 @@
 
 ```json
 {
-  "expo": "~53.0.20",
-  "react": "19.0.0",
-  "react-native": "0.79.5",
-  "expo-camera": "^17.0.6",
-  "expo-notifications": "~0.33.0",
+  "expo": "~54.0.7",
+  "react": "19.1.0",
+  "react-native": "0.81.4",
+  "expo-camera": "^17.0.7",
+  "expo-notifications": "~0.32.11",
   "firebase": "^12.2.1",
   "typescript": "~5.8.3",
-  "@expo/vector-icons": "^14.0.0"
+  "@expo/vector-icons": "^15.0.2"
 }
 ```
 
@@ -249,6 +258,9 @@ export const sendTestNotification = async (mealType: string, reminderTime: Date)
 export const initializeNotifications = async ()
 export const getAllScheduledNotifications = async ()
 export const clearAllNotifications = async ()
+export const scheduleMealPlanningReminders = async ()
+export const cancelMealPlanningReminders = async ()
+export const sendTestMealPlanningReminder = async (mealType: string)
 ```
 
 ### **User Profile Services**
@@ -377,14 +389,11 @@ interface Meal {
 ```typescript
 interface NotificationSettings {
   enabled: boolean;
-  breakfastEnabled: boolean;
-  lunchEnabled: boolean;
-  dinnerEnabled: boolean;
-  snackEnabled: boolean;
-  breakfastTime: string;
-  lunchTime: string;
-  dinnerTime: string;
-  snackTime: string;
+  breakfast: { enabled: boolean; time: string };
+  lunch: { enabled: boolean; time: string };
+  dinner: { enabled: boolean; time: string };
+  snack: { enabled: boolean; time: string };
+  planningReminders: boolean;
 }
 ```
 

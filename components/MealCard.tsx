@@ -26,8 +26,13 @@ export default function MealCard({
   const handleEdit = () => {
     if (onEdit) {
       onEdit();
-    } else {
-      router.push(`/meals/${meal.id}`);
+    } else if (meal.id) {
+      // Add a timestamp parameter to force the router to treat it as a new navigation
+      // and reset the form state
+      router.push({
+        pathname: "/(dashboard)/meals/[id]",
+        params: { id: meal.id, refresh: Date.now().toString() },
+      });
     }
   };
 

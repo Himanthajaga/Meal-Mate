@@ -19,6 +19,7 @@ interface NotificationSettings {
   lunch: { enabled: boolean; time: string };
   dinner: { enabled: boolean; time: string };
   snack: { enabled: boolean; time: string };
+  planningReminders: boolean; // Added for meal planning reminders
 }
 
 export default function NotificationSettingsScreen() {
@@ -29,6 +30,7 @@ export default function NotificationSettingsScreen() {
     lunch: { enabled: true, time: "12:00" },
     dinner: { enabled: true, time: "18:00" },
     snack: { enabled: false, time: "15:00" },
+    planningReminders: true, // Default to enabled
   });
   const [loading, setLoading] = useState(true);
 
@@ -77,6 +79,7 @@ export default function NotificationSettingsScreen() {
     if (!enabled) {
       // Cancel all notifications when disabled
       await NotificationService.cancelAllMealNotifications();
+      await NotificationService.cancelMealPlanningReminders();
     }
 
     await saveSettings({ ...settings, enabled });
@@ -110,7 +113,7 @@ export default function NotificationSettingsScreen() {
         { text: "Cancel", style: "cancel" },
         {
           text: "Save",
-          onPress: async (inputTime) => {
+          onPress: async (inputTime: string | undefined) => {
             if (
               inputTime &&
               /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/.test(inputTime)
@@ -151,6 +154,36 @@ export default function NotificationSettingsScreen() {
     } catch (error) {
       Alert.alert("Error", "Failed to schedule test notification");
     }
+  };
+
+  const testPlanningReminder = async () => {
+    try {
+      // Test a planning reminder for a random meal type
+      const mealTypes = ["breakfast", "lunch", "dinner", "snack"];
+      const randomMealType =
+        mealTypes[Math.floor(Math.random() * mealTypes.length)];
+
+      await NotificationService.sendTestMealPlanningReminder(randomMealType);
+
+      Alert.alert(
+        "Test Planning Reminder",
+        `A test ${randomMealType} planning reminder will appear in a few seconds!`
+      );
+    } catch (error) {
+      Alert.alert("Error", "Failed to send test planning reminder");
+    }
+  };
+
+  const togglePlanningReminders = async (enabled: boolean) => {
+    if (!enabled) {
+      // Cancel planning reminders when disabled
+      await NotificationService.cancelMealPlanningReminders();
+    } else {
+      // Schedule planning reminders when enabled
+      await NotificationService.scheduleMealPlanningReminders();
+    }
+
+    await saveSettings({ ...settings, planningReminders: enabled });
   };
 
   const mealTypeIcons = {
@@ -299,14 +332,109 @@ export default function NotificationSettingsScreen() {
           </View>
         )}
 
+        {/* Meal Planning Reminders */}
+        {settings.enabled && (
+          <View
+            style={[
+              styles.settingCard,
+              { backgroundColor: colors.card, borderColor: colors.border },
+            ]}
+          >
+            <View style={styles.settingRow}>
+              <View style={styles.settingInfo}>
+                <Text style={[styles.settingTitle, { color: colors.text }]}>
+                  Meal Planning Reminders
+                </Text>
+                <Text
+                  style={[
+                    styles.settingDescription,
+                    { color: colors.textSecondary },
+                  ]}
+                >
+                  Get reminded to plan your meals before mealtime
+                </Text>
+              </View>
+              <Switch
+                value={settings.planningReminders}
+                onValueChange={togglePlanningReminders}
+                trackColor={{
+                  false: colors.border,
+                  true: colors.primary + "40",
+                }}
+                thumbColor={
+                  settings.planningReminders
+                    ? colors.primary
+                    : colors.textSecondary
+                }
+              />
+            </View>
+
+            {settings.planningReminders && (
+              <View
+                style={{
+                  marginTop: 15,
+                  padding: 12,
+                  backgroundColor: colors.primary + "10",
+                  borderRadius: 8,
+                  flexDirection: "row",
+                  alignItems: "center",
+                }}
+              >
+                <MaterialIcons
+                  name="schedule"
+                  size={20}
+                  color={colors.primary}
+                />
+                <Text
+                  style={{
+                    marginLeft: 10,
+                    fontSize: 14,
+                    color: colors.textSecondary,
+                    flex: 1,
+                  }}
+                >
+                  You'll receive reminders 30 minutes before each meal time to
+                  plan your meals
+                </Text>
+              </View>
+            )}
+          </View>
+        )}
+
         {/* Test Notification */}
-        <TouchableOpacity
-          style={[styles.testButton, { backgroundColor: colors.primary }]}
-          onPress={testNotification}
+        <View
+          style={{
+            flexDirection: "row",
+            justifyContent: "space-between",
+            marginBottom: 20,
+          }}
         >
-          <MaterialIcons name="notifications-active" size={24} color="white" />
-          <Text style={styles.testButtonText}>Test Notification</Text>
-        </TouchableOpacity>
+          <TouchableOpacity
+            style={[
+              styles.testButton,
+              { backgroundColor: colors.primary, flex: 1, marginRight: 8 },
+            ]}
+            onPress={testNotification}
+          >
+            <MaterialIcons
+              name="notifications-active"
+              size={20}
+              color="white"
+            />
+            <Text style={styles.testButtonText}>Test Meal Reminder</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[
+              styles.testButton,
+              { backgroundColor: colors.primary, flex: 1, marginLeft: 8 },
+            ]}
+            onPress={testPlanningReminder}
+          >
+            <MaterialIcons name="schedule" size={20} color="white" />
+            <Text style={styles.testButtonText}>Test Planning Reminder</Text>
+          </TouchableOpacity>
+        </View>
 
         {/* Info Card */}
         <View

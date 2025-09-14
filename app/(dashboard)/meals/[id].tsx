@@ -19,10 +19,11 @@ import IntegratedCamera from "@/components/IntegratedCamera";
 import NotificationService from "@/services/notificationService";
 import { MaterialIcons } from "@expo/vector-icons";
 const MealFormScreen = () => {
-  const { id, imageUri, prefilledData } = useLocalSearchParams<{
+  const { id, imageUri, prefilledData, refresh } = useLocalSearchParams<{
     id?: string;
     imageUri?: string;
     prefilledData?: string;
+    refresh?: string; // Added to force component reset when navigation includes this param
   }>();
   const isNew = !id || id === "new";
   const [title, setTitle] = useState("");
@@ -50,6 +51,21 @@ const MealFormScreen = () => {
   const currentUserId = user?.uid; // Adjust based on your auth context structure
 
   useEffect(() => {
+    // Reset form fields when id or refresh param changes
+    setTitle("");
+    setName("");
+    setDescription("");
+    setImage("");
+    setMealType("breakfast");
+    setPlannedDate(new Date().toISOString().split("T")[0]);
+    setIngredients("");
+    setCookingTime("");
+    setServings("");
+    setCalories("");
+    setIsPlanned(false);
+    setReminderEnabled(true);
+    setReminderTime("");
+
     const load = async () => {
       // Set image from camera if provided
       if (imageUri) {
@@ -252,14 +268,14 @@ const MealFormScreen = () => {
         Alert.alert(
           "Meal Saved",
           `Your meal has been saved and a reminder is set for ${NotificationService.formatNotificationTime(notificationTime)} on ${new Date(plannedDate).toLocaleDateString()}`,
-          [{ text: "OK", onPress: () => router.back() }]
+          [{ text: "OK", onPress: () => router.push("/(dashboard)/meals") }]
         );
       } else {
         // Cancel notification if meal is no longer planned or reminder is disabled
         if (!isNew) {
           await NotificationService.cancelMealNotification(mealId);
         }
-        router.back();
+        router.push("/(dashboard)/meals");
       }
     } catch (err) {
       console.error("Error saving meal : ", err);
@@ -270,6 +286,28 @@ const MealFormScreen = () => {
   };
   return (
     <ScrollView style={{ flex: 1, padding: 20 }}>
+      {/* Add Back Button at the top */}
+      <TouchableOpacity
+        style={{
+          flexDirection: "row",
+          alignItems: "center",
+          marginBottom: 15,
+          alignSelf: "flex-start",
+          backgroundColor: "#f0f0f0",
+          padding: 8,
+          borderRadius: 8,
+        }}
+        onPress={() => {
+          // Force navigation to meals list instead of going back
+          router.push("/(dashboard)/meals");
+        }}
+      >
+        <MaterialIcons name="arrow-back" size={24} color="#333" />
+        <Text style={{ marginLeft: 5, fontSize: 16, fontWeight: "500" }}>
+          Back
+        </Text>
+      </TouchableOpacity>
+
       <Text style={{ fontSize: 24, fontWeight: "bold", marginBottom: 20 }}>
         {isNew ? "Add Meal" : "Edit Meal"}
       </Text>
@@ -641,7 +679,7 @@ const MealFormScreen = () => {
                       { text: "Cancel", style: "cancel" },
                       {
                         text: "Set",
-                        onPress: (time) => {
+                        onPress: (time: string | undefined) => {
                           if (
                             time &&
                             /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/.test(time)

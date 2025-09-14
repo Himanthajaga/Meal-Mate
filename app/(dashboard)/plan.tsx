@@ -39,6 +39,17 @@ export default function PlanScreen() {
     "breakfast" | "lunch" | "dinner" | "snack"
   >("breakfast");
 
+  // Function to refresh data when date changes
+  const refreshDataForDate = (date: string) => {
+    console.log("Refreshing data for date:", date);
+    setSelectedDate(date);
+    // Load data specifically for this date
+    if (user) {
+      // Reload the entire data to ensure we have the latest
+      loadData();
+    }
+  };
+
   const loadData = async () => {
     if (!user) return;
 
@@ -51,13 +62,22 @@ export default function PlanScreen() {
 
       setAvailableMeals(meals);
       setPlannedMeals(planned);
+
+      // Filter and display meals for the currently selected date
+      const mealsForCurrentDate = planned.filter(
+        (m) => m.plannedDate && m.plannedDate.startsWith(selectedDate)
+      );
+
       console.log(
-        "Loaded planned meals:",
-        planned.map((m) => ({
+        "Loaded planned meals for date:",
+        selectedDate,
+        "Count:",
+        mealsForCurrentDate.length,
+        "Meals:",
+        mealsForCurrentDate.map((m) => ({
           title: m.title,
           plannedDate: m.plannedDate,
           mealType: m.mealType,
-          date: m.date,
         }))
       );
     } catch (error) {
@@ -84,6 +104,7 @@ export default function PlanScreen() {
         {
           text: "Plan Meal",
           onPress: async () => {
+            setShowMealSelector(false); // Close modal immediately after confirming
             try {
               console.log(
                 "Planning meal for date:",
@@ -110,7 +131,6 @@ export default function PlanScreen() {
               });
 
               await createMeal(plannedMealData);
-              setShowMealSelector(false);
               await loadData();
               Alert.alert(
                 "Success",
@@ -145,6 +165,20 @@ export default function PlanScreen() {
   useEffect(() => {
     loadData();
   }, [user]);
+
+  // Add effect to update data when selectedDate changes
+  useEffect(() => {
+    if (user && !loading) {
+      console.log("Selected date changed to:", selectedDate);
+      // Re-filter meals for the selected date
+      const mealsForSelectedDate = plannedMeals.filter(
+        (meal) => meal.plannedDate && meal.plannedDate.startsWith(selectedDate)
+      );
+      console.log(
+        `Found ${mealsForSelectedDate.length} meals for ${selectedDate}`
+      );
+    }
+  }, [selectedDate]);
 
   const getWeekDates = () => {
     const today = new Date();
@@ -215,7 +249,7 @@ export default function PlanScreen() {
           {getWeekDates().map((day) => (
             <TouchableOpacity
               key={day.date}
-              onPress={() => setSelectedDate(day.date)}
+              onPress={() => refreshDataForDate(day.date)}
               style={{
                 backgroundColor:
                   day.date === selectedDate ? colors.primary : colors.card,

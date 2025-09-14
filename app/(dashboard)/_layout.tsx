@@ -6,6 +6,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useTheme } from "@/context/ThemeContext";
 import NotificationService from "@/services/notificationService";
 import { scheduleNotificationsForPlannedMeals } from "@/services/mealService";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const DashboardLayout = () => {
   const { user, loading } = useAuth();
@@ -31,6 +32,23 @@ const DashboardLayout = () => {
 
         // Schedule notifications for existing planned meals
         await scheduleNotificationsForPlannedMeals(user.uid);
+
+        // Schedule meal planning reminders
+        try {
+          const storedSettings = await AsyncStorage.getItem(
+            "notification_settings"
+          );
+          const settings = storedSettings
+            ? JSON.parse(storedSettings)
+            : { enabled: true, planningReminders: true };
+
+          if (settings.enabled && settings.planningReminders) {
+            await NotificationService.scheduleMealPlanningReminders();
+            console.log("Scheduled meal planning reminders on app start");
+          }
+        } catch (error) {
+          console.error("Error scheduling meal planning reminders:", error);
+        }
 
         return () => subscription.remove();
       }

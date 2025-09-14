@@ -292,6 +292,180 @@ class NotificationService {
       snack: "15:00",
     };
   }
+
+  // Schedule daily reminders to plan meals
+  async scheduleMealPlanningReminders(): Promise<void> {
+    try {
+      await this.initialize();
+
+      // Get default times
+      const defaultTimes = this.getDefaultNotificationTimes();
+
+      // Get notification settings
+      const storedSettings = await AsyncStorage.getItem(
+        "notification_settings"
+      );
+      const settings = storedSettings
+        ? JSON.parse(storedSettings)
+        : { enabled: true };
+
+      if (!settings.enabled) {
+        console.log("Notifications are disabled in settings");
+        return;
+      }
+
+      // Cancel any existing planning reminders
+      await this.cancelMealPlanningReminders();
+
+      // Schedule reminders for each meal type (30 minutes before the default meal time)
+      const mealTypes = ["breakfast", "lunch", "dinner", "snack"] as const;
+
+      for (const mealType of mealTypes) {
+        // Check if this meal type notification is enabled
+        const mealTypeKey = `${mealType}Enabled` as keyof typeof settings;
+        if (settings[mealTypeKey] === false) {
+          console.log(`${mealType} notifications are disabled`);
+          continue;
+        }
+
+        // Get the time for this meal type
+        const timeKey = `${mealType}Time` as keyof typeof settings;
+        const timeString = settings[timeKey] || defaultTimes[mealType];
+        const [hours, minutes] = timeString.split(":").map(Number);
+
+        // Create date for tomorrow
+        const tomorrow = new Date();
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        tomorrow.setHours(hours, minutes, 0, 0);
+
+        // Set the notification 30 minutes before meal time
+        const reminderTime = new Date(tomorrow);
+        reminderTime.setMinutes(reminderTime.getMinutes() - 30);
+
+        // Emojis for different meal types
+        const mealEmojis = {
+          breakfast: "🍳",
+          lunch: "🍽️",
+          dinner: "🍝",
+          snack: "🍎",
+        };
+
+        // Schedule the notification
+        const content: Notifications.NotificationContentInput = {
+          title: `${mealEmojis[mealType]} Plan Your ${mealType.charAt(0).toUpperCase() + mealType.slice(1)}`,
+          body: `Time to plan your ${mealType} for tomorrow! Tap to open Meal Mate and add a meal.`,
+          data: {
+            screen: "plan",
+            mealType: mealType,
+          },
+          sound: "default",
+          priority: Notifications.AndroidNotificationPriority.HIGH,
+        };
+
+        const trigger: Notifications.NotificationTriggerInput = {
+          type: Notifications.SchedulableTriggerInputTypes.DATE,
+          date: reminderTime,
+        };
+
+        const notificationId = await Notifications.scheduleNotificationAsync({
+          content,
+          trigger,
+        });
+
+        console.log(
+          `Scheduled ${mealType} planning reminder for ${reminderTime.toLocaleString()}`
+        );
+
+        // Store notification ID for later management
+        await this.storeMealPlanningReminder(mealType, notificationId);
+      }
+    } catch (error) {
+      console.error("Error scheduling meal planning reminders:", error);
+    }
+  }
+
+  // Cancel all meal planning reminders
+  async cancelMealPlanningReminders(): Promise<void> {
+    try {
+      const reminders = await this.getMealPlanningReminders();
+
+      for (const [mealType, notificationId] of Object.entries(reminders)) {
+        if (notificationId) {
+          await Notifications.cancelScheduledNotificationAsync(notificationId);
+          console.log(`Cancelled ${mealType} planning reminder`);
+        }
+      }
+
+      // Clear stored reminders
+      await AsyncStorage.removeItem("meal_planning_reminders");
+    } catch (error) {
+      console.error("Error cancelling meal planning reminders:", error);
+    }
+  }
+
+  // Store meal planning reminder IDs
+  private async storeMealPlanningReminder(
+    mealType: string,
+    notificationId: string
+  ): Promise<void> {
+    try {
+      const reminders = await this.getMealPlanningReminders();
+      reminders[mealType] = notificationId;
+      await AsyncStorage.setItem(
+        "meal_planning_reminders",
+        JSON.stringify(reminders)
+      );
+    } catch (error) {
+      console.error("Error storing meal planning reminder:", error);
+    }
+  }
+
+  // Get stored meal planning reminders
+  private async getMealPlanningReminders(): Promise<Record<string, string>> {
+    try {
+      const stored = await AsyncStorage.getItem("meal_planning_reminders");
+      return stored ? JSON.parse(stored) : {};
+    } catch (error) {
+      console.error("Error getting meal planning reminders:", error);
+      return {};
+    }
+  }
+
+  // Test sending a meal planning reminder
+  async sendTestMealPlanningReminder(mealType: string): Promise<void> {
+    try {
+      await this.initialize();
+
+      const mealEmojis = {
+        breakfast: "🍳",
+        lunch: "🍽️",
+        dinner: "🍝",
+        snack: "🍎",
+      };
+
+      // Create notification content
+      const content: Notifications.NotificationContentInput = {
+        title: `${mealEmojis[mealType as keyof typeof mealEmojis] || "🍽️"} Plan Your ${mealType.charAt(0).toUpperCase() + mealType.slice(1)}`,
+        body: `Time to plan your ${mealType}! Tap to open Meal Mate and add a meal.`,
+        data: {
+          screen: "plan",
+          mealType: mealType,
+        },
+        sound: "default",
+        priority: Notifications.AndroidNotificationPriority.HIGH,
+      };
+
+      // Send immediate notification
+      await Notifications.scheduleNotificationAsync({
+        content,
+        trigger: null, // null trigger means send immediately
+      });
+
+      console.log(`Sent test ${mealType} planning reminder`);
+    } catch (error) {
+      console.error("Error sending test meal planning reminder:", error);
+    }
+  }
 }
 
 export default NotificationService.getInstance();
