@@ -100,6 +100,19 @@ const MealsScreen = () => {
         </Pressable>
       </View>
 
+      <View className="absolute bottom-5 right-5 z-40">
+        <Pressable
+          className="bg-green-500 rounded-full p-5 shadow-lg"
+          onPress={() => {
+            router.push({
+              pathname: "/(dashboard)/qr-generator",
+            } as any);
+          }}
+        >
+          <MaterialIcons name="qr-code" size={28} color={"#fff"} />
+        </Pressable>
+      </View>
+
       <ScrollView className="mt-4">
         {/* Recipe QR Scanner */}
         <View style={{ paddingHorizontal: 16, marginBottom: 16 }}>
