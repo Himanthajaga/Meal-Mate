@@ -18,49 +18,112 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 export const mealColRef = collection(db, "meals");
 
 export const createMeal = async (meal: Meal) => {
-  let imageUrl = meal.image;
-  if (imageUrl && imageUrl.startsWith("file://")) {
-    imageUrl = await uploadImageToCloudinary(imageUrl);
-  }
-  // Ensure favorite field is set to false by default
-  const mealData = {
-    ...meal,
-    image: imageUrl,
-    favorite: meal.favorite || false,
-    createdAt: new Date().toISOString(),
-  };
-  const docRef = await addDoc(mealColRef, mealData);
-  const mealId = docRef.id;
+  try {
+    // Handle image upload
+    let imageUrl = meal.image;
+    if (imageUrl && imageUrl.startsWith("file://")) {
+      const uploadedUrl = await uploadImageToCloudinary(imageUrl);
+      // If upload fails, keep the original file:// URL as a fallback
+      imageUrl = uploadedUrl || imageUrl;
+    }
 
-  // Schedule notification if meal is planned and notifications are enabled
-  if (meal.isPlanned && meal.plannedDate) {
-    await scheduleNotificationForMeal({
-      id: mealId,
-      ...mealData,
-    } as Meal & { id: string });
-  }
+    // Ensure favorite field is set to false by default
+    const mealData = {
+      ...meal,
+      image: imageUrl,
+      favorite: meal.favorite || false,
+      createdAt: new Date().toISOString(),
+    };
 
-  return mealId;
+    // Add to Firestore
+    const docRef = await addDoc(mealColRef, mealData);
+    const mealId = docRef.id;
+
+    // Schedule notification if meal is planned and notifications are enabled
+    if (meal.isPlanned && meal.plannedDate) {
+      try {
+        await scheduleNotificationForMeal({
+          id: mealId,
+          ...mealData,
+        } as Meal & { id: string });
+      } catch (notifError) {
+        console.error("Error scheduling notification:", notifError);
+        // Continue even if notification scheduling fails
+      }
+    }
+
+    return mealId;
+  } catch (error) {
+    console.error("Error creating meal:", error);
+    throw error; // Re-throw to allow caller to handle
+  }
 };
 
 export const uploadImageToCloudinary = async (imageUri: string) => {
-  const data = new FormData();
-  data.append("file", {
-    uri: imageUri,
-    type: "image/jpeg",
-    name: "upload.jpg",
-  } as any);
-  data.append("upload_preset", "my_preset"); // Replace with your preset
-
-  const res = await fetch(
-    "https://api.cloudinary.com/v1_1/dfwzzxgja/image/upload",
-    {
-      method: "POST",
-      body: data,
+  try {
+    // Validate the image URI
+    if (!imageUri || typeof imageUri !== "string") {
+      console.error("Invalid image URI:", imageUri);
+      return null;
     }
-  );
-  const result = await res.json();
-  return result.secure_url;
+
+    // Create form data for upload
+    const data = new FormData();
+    data.append("file", {
+      uri: imageUri,
+      type: "image/jpeg",
+      name: "upload.jpg",
+    } as any);
+    data.append("upload_preset", "my_preset"); // Replace with your preset
+
+    // Set timeout for the fetch operation
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+
+    try {
+      // Attempt the upload
+      const res = await fetch(
+        "https://api.cloudinary.com/v1_1/dfwzzxgja/image/upload",
+        {
+          method: "POST",
+          body: data,
+          signal: controller.signal,
+        }
+      );
+
+      // Clear the timeout
+      clearTimeout(timeoutId);
+
+      // Check if the response is OK
+      if (!res.ok) {
+        const errorText = await res.text();
+        console.error("Cloudinary upload failed:", errorText);
+        return null;
+      }
+
+      // Parse the response
+      const result = await res.json();
+
+      // Validate the result
+      if (!result || !result.secure_url) {
+        console.error("Invalid response from Cloudinary:", result);
+        return null;
+      }
+
+      return result.secure_url;
+    } catch (fetchError: any) {
+      clearTimeout(timeoutId);
+      if (fetchError.name === "AbortError") {
+        console.error("Image upload timed out");
+      } else {
+        console.error("Error uploading to Cloudinary:", fetchError);
+      }
+      return null;
+    }
+  } catch (error) {
+    console.error("Error in uploadImageToCloudinary:", error);
+    return null;
+  }
 };
 
 export const getMeals = async (userId: string) => {

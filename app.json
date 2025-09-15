@@ -25,7 +25,11 @@
         "android.permission.ACCESS_MEDIA_LOCATION",
         "android.permission.RECEIVE_BOOT_COMPLETED",
         "android.permission.SCHEDULE_EXACT_ALARM",
-        "android.permission.WAKE_LOCK"
+        "android.permission.WAKE_LOCK",
+        "android.permission.READ_MEDIA_VISUAL_USER_SELECTED",
+        "android.permission.READ_MEDIA_IMAGES",
+        "android.permission.READ_MEDIA_VIDEO",
+        "android.permission.READ_MEDIA_AUDIO"
       ],
       "package": "com.himanthajaga.mealmate"
     },
@@ -76,6 +80,7 @@
       "eas": {
         "projectId": "d2d86480-7bdf-4896-b74c-69cef223253a"
       }
-    }
+    },
+    "owner": "himanthajaga"
   }
 }
