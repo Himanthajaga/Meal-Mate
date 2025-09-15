@@ -17,9 +17,26 @@
         "buildType": "apk",
         "gradleCommand": ":app:assembleRelease"
       },
+      "node": "20.15.1",
       "env": {
         "EXPO_NO_CAPABILITY_SYNC": "1"
       }
+    },
+    "android-java17": {
+      "autoIncrement": true,
+      "android": {
+        "buildType": "apk",
+        "gradleCommand": ":app:assembleRelease",
+        "image": "ubuntu-22.04-jdk-17-ndk-r25c"
+      },
+      "cache": {
+        "key": "eas-build-android-java17-v1"
+      },
+      "env": {
+        "NODE_ENV": "production",
+        "JAVA_VERSION": "17"
+      },
+      "node": "20.15.1"
     }
   },
   "submit": {

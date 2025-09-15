@@ -1,19 +1,25 @@
 {
-  "name": "Meal-mate",
+  "name": "meal-mate",
   "main": "expo-router/entry",
   "version": "1.0.0",
   "scripts": {
     "start": "expo start",
     "reset-project": "node ./scripts/reset-project.js",
-    "android": "expo start --android",
-    "ios": "expo start --ios",
+    "android": "expo run:android",
+    "ios": "expo run:ios",
     "web": "expo start --web",
-    "lint": "expo lint"
+    "lint": "expo lint",
+    "prebuild": "expo prebuild",
+    "cleanup": "node ./scripts/cleanup-deps.js",
+    "build:android": "npm install && npm shrinkwrap && eas build --platform android --profile production-no-prebuild",
+    "build:android:ps": "powershell -ExecutionPolicy Bypass -File .\\scripts\\build-android.ps1",
+    "build:android:sh": "bash ./scripts/build-android.sh",
+    "fix-deps": "node ./scripts/cleanup-deps.js && npm install"
   },
   "dependencies": {
     "@expo/schema-utils": "^0.1.7",
     "@expo/vector-icons": "^15.0.2",
-    "@react-native-async-storage/async-storage": "^2.2.0",
+    "@react-native-async-storage/async-storage": "^1.19.3",
     "@react-native/codegen": "^0.81.4",
     "@react-navigation/bottom-tabs": "^7.3.10",
     "@react-navigation/elements": "^2.3.8",
@@ -51,16 +57,25 @@
     "react-native-screens": "~4.16.0",
     "react-native-web": "^0.21.0",
     "react-native-webview": "13.15.0",
+    "react-native-worklets": "^0.5.1",
     "tailwindcss": "^3.4.17"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",
     "@types/axios": "^0.14.4",
-    "@types/react": "~19.0.10",
+    "@types/expo": "^33.0.3",
+    "@types/react": "^19.1.0",
     "@types/react-native": "^0.73.0",
+    "babel-plugin-module-resolver": "^5.0.2",
     "eslint": "^9.25.0",
     "eslint-config-expo": "~9.2.0",
+    "metro": "^0.80.5",
+    "metro-resolver": "^0.80.5",
+    "prettier": "3.6.2",
     "typescript": "~5.8.3"
   },
-  "private": true
+  "private": true,
+  "engines": {
+    "node": ">=20.0.0"
+  }
 }
