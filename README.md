@@ -115,6 +115,106 @@
 
 ---
 
+### **Screenshots**
+
+<details>
+<summary><b>📱 Authentication Screens</b> (Click to expand)</summary>
+
+#### Registration
+
+<p align="center">
+  <img src="./screenshots/register page 1 st image.jpg" width="300" alt="Registration Screen 1">
+  <img src="./screenshots/register 2 nd image.jpg" width="300" alt="Registration Screen 2">
+</p>
+</details>
+
+<details>
+<summary><b>🏠 Home & Dashboard</b> (Click to expand)</summary>
+
+#### Home Screen
+
+<p align="center">
+  <img src="./screenshots/home screen 1 st image.jpg" width="300" alt="Home Screen 1">
+  <img src="./screenshots/home screnn 2 nd image.jpg" width="300" alt="Home Screen 2">
+</p>
+<p align="center">
+  <img src="./screenshots/home screen 3 rd image.jpg" width="300" alt="Home Screen 3">
+  <img src="./screenshots/home screen 4th image.jpg" width="300" alt="Home Screen 4">
+</p>
+<p align="center">
+  <img src="./screenshots/home screen 6 th image.jpg" width="300" alt="Home Screen 6">
+</p>
+</details>
+
+<details>
+<summary><b>🍽️ Meals & Favorites</b> (Click to expand)</summary>
+
+#### Meals Screen
+
+<p align="center">
+  <img src="./screenshots/meals screen 1 st image.jpg" width="300" alt="Meals Screen">
+</p>
+
+#### Favorites Page
+
+<p align="center">
+  <img src="./screenshots/favourite page 1 st image.jpg" width="300" alt="Favorites Page">
+</p>
+</details>
+
+<details>
+<summary><b>📅 Meal Planner</b> (Click to expand)</summary>
+
+#### Meal Planning Calendar
+
+<p align="center">
+  <img src="./screenshots/meal planner page 1 st image.jpg" width="300" alt="Meal Planner 1">
+  <img src="./screenshots/meal planner page 2 nd image.jpg" width="300" alt="Meal Planner 2">
+</p>
+</details>
+
+<details>
+<summary><b>🔄 QR Code Generator</b> (Click to expand)</summary>
+
+#### QR Code Generation & Sharing
+
+<p align="center">
+  <img src="./screenshots/qr generator page 1 st image.jpg" width="300" alt="QR Generator 1">
+  <img src="./screenshots/qr genarator page 2 nd image.jpg" width="300" alt="QR Generator 2">
+</p>
+<p align="center">
+  <img src="./screenshots/qr generator page 3 rd image.jpg" width="300" alt="QR Generator 3">
+</p>
+</details>
+
+<details>
+<summary><b>⚙️ Settings & Profile</b> (Click to expand)</summary>
+
+#### Settings Screens
+
+<p align="center">
+  <img src="./screenshots/settings page 1 st image.jpg" width="300" alt="Settings 1">
+  <img src="./screenshots/settings page second image.jpg" width="300" alt="Settings 2">
+</p>
+<p align="center">
+  <img src="./screenshots/settings page 3 rd image.jpg" width="300" alt="Settings 3">
+</p>
+
+#### Notification Settings
+
+<p align="center">
+  <img src="./screenshots/settings notification page 1 st iamge.jpg" width="300" alt="Notification Settings 1">
+  <img src="./screenshots/settings notification page 2 nd image.jpg" width="300" alt="Notification Settings 2">
+</p>
+
+#### Profile Management
+
+<p align="center">
+  <img src="./screenshots/edit profile 1 st image.jpg" width="300" alt="Edit Profile 1">
+  <img src="./screenshots/edit profile 2 nd image.jpg" width="300" alt="Edit Profile 2">
+</p>
+</details>
+
 ## 🛠️ Technical Implementation
 
 ### **Frontend Architecture**
