@@ -16,6 +16,7 @@ export default function QuickCameraAction({
 }: QuickCameraActionProps) {
   const [showCamera, setShowCamera] = useState(false);
   const [cameraMode, setCameraMode] = useState<"photo" | "qr" | "both">("both");
+  const [isProcessing, setIsProcessing] = useState(false); // Add processing state
   const { colors } = useTheme();
   const router = useRouter();
 
@@ -63,11 +64,148 @@ export default function QuickCameraAction({
   };
 
   const handleQRScanned = (data: string) => {
+    // Prevent multiple processing of the same QR code
+    if (isProcessing) {
+      console.log("Already processing a QR code, ignoring");
+      return;
+    }
+
     setShowCamera(false);
+
     if (onQRScanned) {
       onQRScanned(data);
     } else {
-      // Default behavior: show QR data
+      // Try to parse QR data as a recipe
+      try {
+        const parsedData = JSON.parse(data);
+
+        // Check if this is a recipe QR code
+        if (parsedData.type === "recipe" && parsedData.meal) {
+          setIsProcessing(true); // Set processing flag
+
+          console.log(
+            "Recipe QR code detected in QuickCameraAction:",
+            parsedData.meal.title
+          );
+
+          Alert.alert(
+            "Recipe Found!",
+            `Would you like to add "${parsedData.meal.title}" to your meals?`,
+            [
+              {
+                text: "Cancel",
+                style: "cancel",
+                onPress: () => setIsProcessing(false), // Reset processing flag on cancel
+              },
+              {
+                text: "Add Recipe",
+                onPress: () => {
+                  try {
+                    // Ensure clean data
+                    const cleanData = JSON.parse(
+                      JSON.stringify(parsedData.meal)
+                    );
+                    // Remove any circular references or complex objects
+                    if (
+                      cleanData.image &&
+                      typeof cleanData.image !== "string"
+                    ) {
+                      delete cleanData.image;
+                    }
+
+                    // Create a unique identifier for this scan
+                    const scanId = Date.now().toString();
+                    const encodedData = encodeURIComponent(
+                      JSON.stringify(cleanData)
+                    );
+
+                    console.log(
+                      "QuickCameraAction: Navigating to meal form with QR data"
+                    );
+
+                    // Use router.push instead of replace to ensure consistent behavior with RecipeQRScanner
+                    router.push({
+                      pathname: "/(dashboard)/meals/new",
+                      params: {
+                        scanId: scanId,
+                        prefilledData: encodedData,
+                        refresh: Date.now().toString(), // Add refresh parameter to force component reset
+                      },
+                    } as any);
+
+                    // Reset processing flag after successful navigation
+                    setTimeout(() => {
+                      setIsProcessing(false);
+                    }, 1000);
+                  } catch (error) {
+                    console.error(
+                      "QuickCameraAction: Error navigating with recipe data:",
+                      error
+                    );
+
+                    // Try one more approach as a fallback
+                    try {
+                      console.log("Attempting fallback navigation approach");
+                      const scanId = Date.now().toString();
+                      const cleanData = JSON.parse(
+                        JSON.stringify(parsedData.meal)
+                      );
+                      router.push("/(dashboard)/meals/new");
+
+                      // After a brief delay, try to navigate again with the data
+                      setTimeout(() => {
+                        router.push({
+                          pathname: "/(dashboard)/meals/[id]",
+                          params: {
+                            id: "new",
+                            scanId: scanId,
+                            prefilledData: encodeURIComponent(
+                              JSON.stringify(cleanData)
+                            ),
+                            refresh: Date.now().toString(),
+                          },
+                        } as any);
+
+                        // Reset processing flag after fallback navigation
+                        setTimeout(() => {
+                          setIsProcessing(false);
+                        }, 500);
+                      }, 500);
+                    } catch (fallbackError) {
+                      console.error(
+                        "Even fallback navigation failed:",
+                        fallbackError
+                      );
+
+                      // Reset processing flag on error
+                      setIsProcessing(false);
+
+                      Alert.alert(
+                        "Navigation Error",
+                        "Could not navigate to the meal form. Please try scanning again or go to the Meals screen first.",
+                        [
+                          {
+                            text: "Go to Meals",
+                            onPress: () => router.push("/(dashboard)/meals"),
+                          },
+                          { text: "Cancel", style: "cancel" },
+                        ]
+                      );
+                    }
+                  }
+                },
+              },
+            ]
+          );
+          return;
+        }
+      } catch (error) {
+        console.log("Not a valid JSON QR code:", error);
+        // Reset processing flag if not a recipe QR code
+        setIsProcessing(false);
+      }
+
+      // Default behavior for non-recipe QR codes
       Alert.alert("QR Code Scanned", data);
     }
   };

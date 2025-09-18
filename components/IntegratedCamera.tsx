@@ -132,14 +132,54 @@ export default function IntegratedCamera({
   };
 
   const handleBarcodeScanned = ({ type, data }: BarcodeScanningResult) => {
+    // Check if we've already scanned this barcode in this session
+    if (data === scannedData) {
+      console.log("Duplicate QR scan, ignoring");
+      return;
+    }
+
     setScannedData(data);
 
     if (onQRScanned) {
-      onQRScanned(data);
+      // Always close camera first to prevent visual issues
       onClose();
+
+      // Then trigger the callback - with a slight delay to ensure UI is ready
+      setTimeout(() => {
+        onQRScanned(data);
+      }, 300);
     } else {
-      // Default behavior for URL detection
-      Alert.alert("QR Code Scanned", `Type: ${type}\\nData: ${data}`, [
+      // Default behavior - try to handle recipe QR codes or URLs
+      try {
+        // Check if it's a recipe QR code by trying to parse JSON
+        const parsedData = JSON.parse(data);
+        if (parsedData.type === "recipe" && parsedData.meal) {
+          // It's a recipe QR code - handle accordingly
+          onClose();
+          Alert.alert(
+            "Recipe QR Detected",
+            `Recipe "${parsedData.meal.title || parsedData.meal.name}" detected. Would you like to view it?`,
+            [
+              { text: "Cancel", style: "cancel" },
+              {
+                text: "View Recipe",
+                onPress: () => {
+                  // Implementation would depend on your app's navigation structure
+                  console.log("Recipe QR detected in default handler");
+                },
+              },
+            ]
+          );
+          return;
+        }
+      } catch (e) {
+        // Not a JSON or recipe QR code, continue with URL handling
+        console.log("Not a recipe QR code, checking if URL");
+      }
+
+      // URL handling
+      onClose();
+      Alert.alert("QR Code Scanned", `Type: ${type}\nData: ${data}`, [
         { text: "Cancel", style: "cancel" },
         {
           text: "Open Link",

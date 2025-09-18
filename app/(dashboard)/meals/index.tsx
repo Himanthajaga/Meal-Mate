@@ -118,10 +118,26 @@ const MealsScreen = () => {
         <View style={{ paddingHorizontal: 16, marginBottom: 16 }}>
           <RecipeQRScanner
             onRecipeScanned={(recipeData) => {
-              router.push({
-                pathname: "/(dashboard)/meals/new",
-                params: { prefilledData: JSON.stringify(recipeData) },
-              } as any);
+              // Use a more reliable navigation approach
+              console.log("Recipe scanned from index, navigating...");
+              try {
+                // Generate a unique identifier to prevent loops
+                const scanId = Date.now().toString();
+                const encodedData = encodeURIComponent(
+                  JSON.stringify(recipeData)
+                );
+
+                // Navigate directly with all parameters in a single call
+                router.replace(
+                  `/(dashboard)/meals/new?scanId=${scanId}&prefilledData=${encodedData}`
+                );
+              } catch (error) {
+                console.error("Navigation error:", error);
+                Alert.alert(
+                  "Navigation Issue",
+                  "There was a problem navigating to the meal form."
+                );
+              }
             }}
           />
         </View>

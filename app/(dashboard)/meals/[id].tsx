@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   View,
   Text,
@@ -18,13 +18,30 @@ import { useAuth } from "@/context/AuthContext";
 import IntegratedCamera from "@/components/IntegratedCamera";
 import NotificationService from "@/services/notificationService";
 import { MaterialIcons } from "@expo/vector-icons";
+
 const MealFormScreen = () => {
-  const { id, imageUri, prefilledData, refresh } = useLocalSearchParams<{
+  const params = useLocalSearchParams<{
     id?: string;
     imageUri?: string;
     prefilledData?: string;
+    scanId?: string; // Track unique scan ID to prevent processing the same QR code multiple times
     refresh?: string; // Added to force component reset when navigation includes this param
   }>();
+
+  // Extract params, ensure we get all variations of parameters (URL encoded or object params)
+  const id = params.id;
+  const imageUri = params.imageUri;
+  const prefilledData = params.prefilledData;
+  const scanId = params.scanId;
+  const refresh = params.refresh;
+
+  console.log("MealForm received params:", {
+    id,
+    imageUriPresent: !!imageUri,
+    prefilledDataPresent: !!prefilledData,
+    scanId,
+    refresh,
+  });
   const isNew = !id || id === "new";
   const [title, setTitle] = useState("");
   const [name, setName] = useState("");
@@ -50,8 +67,50 @@ const MealFormScreen = () => {
   const { user } = useAuth(); // Get user from auth context
   const currentUserId = user?.uid; // Adjust based on your auth context structure
 
+  // Use refs to track data processing status
+  const processedPrefilledDataRef = useRef<string | null>(null);
+  const processedImageUriRef = useRef<string | null>(null);
+  const effectCountRef = useRef(0);
+
   useEffect(() => {
-    // Reset form fields when id or refresh param changes
+    // Increment effect counter to track how many times this effect runs
+    effectCountRef.current += 1;
+    const effectCount = effectCountRef.current;
+
+    // Generate unique identifiers for current params to detect changes
+    const scanIdIdentifier = scanId || "none";
+    const prefilledDataId = prefilledData
+      ? prefilledData.substring(0, 50)
+      : "none";
+    const imageUriId = imageUri || "none";
+    const refreshId = refresh || "none";
+
+    console.log(`MealForm useEffect run #${effectCount} with params:`, {
+      id,
+      scanId: scanIdIdentifier,
+      imageUri: imageUriId,
+      prefilledData: prefilledDataId,
+      refresh: refreshId,
+      alreadyProcessedPrefilled:
+        processedPrefilledDataRef.current === prefilledDataId,
+      alreadyProcessedImage: processedImageUriRef.current === imageUriId,
+    });
+
+    // Force reprocessing if we have a new scanId or refresh parameter
+    const forceReprocess = scanId || refresh;
+
+    // Skip processing if we've already handled these exact parameters and no force refresh
+    if (
+      processedPrefilledDataRef.current === prefilledDataId &&
+      processedImageUriRef.current === imageUriId &&
+      effectCount > 1 &&
+      !forceReprocess
+    ) {
+      console.log("Skipping duplicate effect processing");
+      return;
+    }
+
+    // Reset form fields for new effect processing
     setTitle("");
     setName("");
     setDescription("");
@@ -67,15 +126,23 @@ const MealFormScreen = () => {
     setReminderTime("");
 
     const load = async () => {
-      // Set image from camera if provided
-      if (imageUri) {
+      // Set image from camera if provided and not already processed
+      if (imageUri && processedImageUriRef.current !== imageUriId) {
+        console.log("Setting image from camera:", imageUri);
         setImage(imageUri as string);
+        processedImageUriRef.current = imageUriId;
       }
 
-      // Handle prefilled data from QR recipe scans
-      if (prefilledData && isNew) {
+      // Handle prefilled data from QR recipe scans if not already processed
+      if (
+        prefilledData &&
+        isNew &&
+        processedPrefilledDataRef.current !== prefilledDataId
+      ) {
+        console.log("Handling prefilled data from QR");
         try {
           const recipeData = JSON.parse(prefilledData as string);
+          console.log("Parsed prefilled data:", recipeData);
           setTitle(recipeData.title || recipeData.name || "");
           setName(recipeData.name || recipeData.title || "");
           setDescription(
@@ -104,8 +171,32 @@ const MealFormScreen = () => {
           if (recipeData.image || recipeData.imageUrl) {
             setImage(recipeData.image || recipeData.imageUrl);
           }
+
+          // Mark this data as processed
+          processedPrefilledDataRef.current = prefilledDataId;
+          console.log(
+            "Successfully loaded prefilled data and marked as processed"
+          );
+
+          // Show confirmation to the user
+          Alert.alert(
+            "Recipe Loaded",
+            `Recipe "${recipeData.title || recipeData.name}" has been loaded successfully.`,
+            [{ text: "OK" }]
+          );
         } catch (error) {
-          console.log("Error parsing prefilled data:", error);
+          console.error("Error parsing prefilled data:", error);
+          console.log("Raw prefilledData:", prefilledData);
+
+          // Mark as processed even on error to prevent infinite retries
+          processedPrefilledDataRef.current = prefilledDataId;
+
+          // Show error to the user
+          Alert.alert(
+            "Data Error",
+            "There was a problem loading the recipe data. Please try scanning again.",
+            [{ text: "OK" }]
+          );
         }
       }
 
@@ -149,7 +240,7 @@ const MealFormScreen = () => {
       }
     };
     load();
-  }, [id, imageUri, prefilledData]);
+  }, [id, imageUri, prefilledData, refresh, scanId]); // Added scanId to dependencies
 
   // Image picker handler
   const pickImage = async () => {
