@@ -215,6 +215,9 @@
 </p>
 </details>
 
+### **Youtube Demo Link**
+https://youtu.be/GHPtuMilwSc?si=twRUEDScC8Nflg7l
+
 ## 🛠️ Technical Implementation
 
 ### **Frontend Architecture**
