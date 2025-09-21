@@ -221,6 +221,9 @@ https://youtu.be/GHPtuMilwSc?si=twRUEDScC8Nflg7l
 ### **APK Expo-Link**
 https://expo.dev/artifacts/eas/pahaYAgghbYADxDwmcUduL.apk
 
+### **Deployment URL**
+ https://meal-mate--x6g2g1f659.expo.app
+
 ## 🛠️ Technical Implementation
 
 ### **Frontend Architecture**
