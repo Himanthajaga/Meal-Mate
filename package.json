@@ -11,10 +11,11 @@
     "lint": "expo lint",
     "prebuild": "expo prebuild",
     "cleanup": "node ./scripts/cleanup-deps.js",
-    "build:android": "npm install && npm shrinkwrap && eas build --platform android --profile production-no-prebuild",
+    "build:android": "npm install && npm rebuild lightningcss --platform=linux --arch=x64 && eas build --platform android --profile production",
     "build:android:ps": "powershell -ExecutionPolicy Bypass -File .\\scripts\\build-android.ps1",
     "build:android:sh": "bash ./scripts/build-android.sh",
-    "fix-deps": "node ./scripts/cleanup-deps.js && npm install"
+    "fix-deps": "node ./scripts/cleanup-deps.js && npm install",
+    "build:android:no-tailwind": "eas build --platform android --profile no-tailwind"
   },
   "dependencies": {
     "@expo/schema-utils": "^0.1.7",
