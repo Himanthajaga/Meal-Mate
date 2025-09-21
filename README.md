@@ -218,6 +218,9 @@
 ### **Youtube Demo Link**
 https://youtu.be/GHPtuMilwSc?si=twRUEDScC8Nflg7l
 
+### **APK Expo-Link**
+https://expo.dev/artifacts/eas/pahaYAgghbYADxDwmcUduL.apk
+
 ## 🛠️ Technical Implementation
 
 ### **Frontend Architecture**
