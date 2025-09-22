@@ -215,6 +215,9 @@
 </p>
 </details>
 
+### **Github Repo Link**
+https://github.com/Himanthajaga/Meal-Mate.git
+
 ### **Youtube Demo Link**
 https://youtu.be/GHPtuMilwSc?si=twRUEDScC8Nflg7l
 
